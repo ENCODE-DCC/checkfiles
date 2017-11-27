@@ -57,7 +57,7 @@ def run(image_id, instance_type,
         sys.exit(1)
 
     user_data = subprocess.check_output(
-        ['git', 'show', commit + ':checkfiles/cloud-config.yml']
+        ['git', 'show', commit + ':cloud-config.yml']
         ).decode('utf-8')
     user_data = user_data % {
         'COMMIT': commit,
