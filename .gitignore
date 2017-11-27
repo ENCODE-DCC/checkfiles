@@ -99,3 +99,11 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+
+# Added from encoded repo
+/bin/
+/include/
+/lib/
+pip-selfcheck.json
+pyvenv.cfg
