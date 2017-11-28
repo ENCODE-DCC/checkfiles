@@ -11,6 +11,17 @@ Errors are reported back to encodeD.
 Setup
 -----
 
+Install pyenv environment(if not already installed from ENCODE-DCC/encoded) repo::
+
+    brew install pyenv
+    pyenv install 3.4.3
+    pyenv install 2.7.13
+    echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
+    echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+    echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
+    echo 'eval "pyenv shell 2.7.13 3.4.3"' >> ~/.bash_profile
+    source ~/.bash_profile
+
 Install required packages for running deploy::
 
     pyvenv .
