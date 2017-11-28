@@ -46,10 +46,10 @@ runcmd:
 - curl -sS -L -o /usr/local/bin/validateFiles http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/validateFiles
 - chmod +x /usr/local/bin/validateFiles
 
-- mkdir /opt/encoded
+- mkdir /opt/encoded/checkfiles
 - chown build:build /opt/encoded
-- sudo -u build git clone --no-checkout https://github.com/ENCODE-DCC/encoded.git /opt/encoded
-- sudo -u build git -C /opt/encoded checkout %(COMMIT)s
+- sudo -u build git clone --no-checkout https://github.com/ENCODE-DCC/checkfiles.git /opt/encoded/checkfiles
+- sudo -u build git -C /opt/encoded/checkfiles checkout %(COMMIT)s
 - chmod +x /opt/encoded/checkfiles/script
 
 - cd /opt/encoded/checkfiles
