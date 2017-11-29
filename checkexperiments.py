@@ -27,7 +27,7 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
     if dry_run:
         dr = "-- Dry Run"
 
-    version = '0.11'
+    version = '0.1'
 
     try:
         ip_output = subprocess.check_output(
@@ -39,10 +39,8 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
     initiating_run = 'STARTING Checkexperiments version ' + \
         '{} ({}) ({}): {} on {} at {}'.format(
             version, url, search_query, dr, ip, datetime.datetime.now())
-    out.write(initiating_run + '\nAward\tAccession\tcurrent status -> new status\tsubmitted date\n')
+    out.write(initiating_run + '\n')
     out.flush()
-    err.write(initiating_run + '\nAward\tAccession\terror message\n')
-    err.flush()
     if bot_token:
         sc = SlackClient(bot_token)
         sc.api_call(
@@ -142,62 +140,56 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                 if file_obj.get('replicate'):
                     submitted_replicates.add(file_obj.get('replicate'))
             if replicates and not replicates - submitted_replicates:
-                if award_obj.get('rfa') == 'modERN':
-                    err.write(
-                        award_obj.get('rfa') + '\t' +
-                        experiment_accession + '\texcluded from automatic screening\n')
-                    err.flush()
+                # check read depth:
+                depth_flag = False
+                if award_obj.get('rfa') == 'modENCODE':
+                    for rep in replicates_reads:
+                        if replicates_reads[rep] < min_depth['modENCODE-chip']:
+                            depth_flag = True
+                            err.write(
+                                award_obj.get('rfa') + '\t' + \
+                                experiment_accession + '\t' + rep + \
+                                '\treads_count=' + str(replicates_reads[rep]) + \
+                                '\texpected count=' + \
+                                str(min_depth['modENCODE-chip']) + '\n')
+                            err.flush()
+                            break
                 else:
-                    # check read depth:
-                    depth_flag = False
-                    if award_obj.get('rfa') == 'modENCODE':
+                    if ex['assay_term_name'] in min_depth:
                         for rep in replicates_reads:
-                            if replicates_reads[rep] < min_depth['modENCODE-chip']:
+                            if replicates_reads[rep] < min_depth[ex['assay_term_name']]:
                                 depth_flag = True
                                 err.write(
                                     award_obj.get('rfa') + '\t' + \
                                     experiment_accession + '\t' + rep + \
-                                    '\treads_count=' + str(replicates_reads[rep]) + \
-                                    '\texpected count=' + \
-                                    str(min_depth['modENCODE-chip']) + '\n')
+                                    '\treads_count=' + \
+                                    str(replicates_reads[rep]) + '\texpected count=' + \
+                                    str(min_depth[ex['assay_term_name']]) + '\n')
                                 err.flush()
                                 break
+                if not depth_flag:
+                    pass_audit = True
+                    try:
+                        audit_request = session.get(urljoin(
+                            url,
+                            '/' + experiment_accession + '?frame=page&format=json'))
+                        audit_obj = audit_request.json().get('audit')
+                        if audit_obj.get("ERROR") or audit_obj.get("NOT_COMPLIANT"):
+                            pass_audit = False
+                    except requests.exceptions.RequestException:
+                        continue
                     else:
-                        if ex['assay_term_name'] in min_depth:
-                            for rep in replicates_reads:
-                                if replicates_reads[rep] < min_depth[ex['assay_term_name']]:
-                                    depth_flag = True
-                                    err.write(
-                                        award_obj.get('rfa') + '\t' + \
-                                        experiment_accession + '\t' + rep + \
-                                        '\treads_count=' + \
-                                        str(replicates_reads[rep]) + '\texpected count=' + \
-                                        str(min_depth[ex['assay_term_name']]) + '\n')
-                                    err.flush()
-                                    break
-                    if not depth_flag:
-                        pass_audit = True
-                        try:
-                            audit_request = session.get(urljoin(
-                                url,
-                                '/' + experiment_accession + '?frame=page&format=json'))
-                            audit_obj = audit_request.json().get('audit')
-                            if audit_obj.get("ERROR"):
-                                pass_audit = False
-                        except requests.exceptions.RequestException:
-                            continue
+                        if pass_audit:
+                            out.write(
+                                award_obj.get('rfa') + '\t' + \
+                                experiment_accession + '\t' + ex['status'] + \
+                                '\t-> submitted\t' + max(dates).strftime("%Y-%m-%d") + '\n')
+                            out.flush()
                         else:
-                            if pass_audit:
-                                out.write(
-                                    award_obj.get('rfa') + '\t' + \
-                                    experiment_accession + '\t' + ex['status'] + \
-                                    '\t-> submitted\t' + max(dates).strftime("%Y-%m-%d") + '\n')
-                                out.flush()
-                            else:
-                                err.write(
-                                    award_obj.get('rfa') + '\t' +
-                                    experiment_accession + '\taudit errors\n')
-                                err.flush()
+                            err.write(
+                                award_obj.get('rfa') + '\t' +
+                                experiment_accession + '\taudit errors\n')
+                            err.flush()
 
 
     finishing_run = 'FINISHED Checkexperiments at {}'.format(datetime.datetime.now())
@@ -252,7 +244,7 @@ def main():
     parser.add_argument(
         '--dry-run', action='store_true', help="Don't update status, just check")
     parser.add_argument(
-        '--search-query', default='status=started',
+        '--search-query', default='status=proposed&status=started',
         help="override the experiment search query, e.g. 'accession=ENCSR000ABC'")
     parser.add_argument(
         '--accessions-list', default='',
