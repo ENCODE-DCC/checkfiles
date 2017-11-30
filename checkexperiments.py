@@ -174,7 +174,7 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                             url,
                             '/' + experiment_accession + '?frame=page&format=json'))
                         audit_obj = audit_request.json().get('audit')
-                        if audit_obj.get("ERROR") or audit_obj.get("NOT_COMPLIANT"):
+                        if audit_obj.get("ERROR"):
                             pass_audit = False
                     except requests.exceptions.RequestException:
                         continue
@@ -244,7 +244,7 @@ def main():
     parser.add_argument(
         '--dry-run', action='store_true', help="Don't update status, just check")
     parser.add_argument(
-        '--search-query', default='status=proposed&status=started',
+        '--search-query', default='status=started',
         help="override the experiment search query, e.g. 'accession=ENCSR000ABC'")
     parser.add_argument(
         '--accessions-list', default='',
