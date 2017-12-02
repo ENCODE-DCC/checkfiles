@@ -838,8 +838,10 @@ def remove_local_file(path_to_the_file, errors):
     except NameError:
         pass
 
+def extract_accession(file_path):
+    return file_path.split('/')[-1].split('.')[0]
 
-def fetch_files(session, url, search_query, out, include_unexpired_upload=False, file_list=None):
+def fetch_files(session, url, search_query, out, include_unexpired_upload=False, file_list=None, local_file=None):
     graph = []
     # checkfiles using a file with a list of file accessions to be checked
     if file_list:
@@ -858,6 +860,16 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
                 local = copy.deepcopy(r.json()['@graph'])
                 graph.extend(local)
     # checkfiles using a query
+    elif local_file:
+        print extract_accession(local_file)
+        r = session.get(
+            urljoin(url, '/search/?field=@id&limit=all&type=File&' + search_query))
+        try:
+            r.raise_for_status()
+        except requests.HTTPError:
+            return
+        else:
+            graph = r.json()['@graph']
     else:
         r = session.get(
             urljoin(url, '/search/?field=@id&limit=all&type=File&' + search_query))
@@ -970,8 +982,9 @@ def patch_file(session, url, job):
                         'was {} and now is {}.'.format(job['item'].get('status', 'UNKNOWN'), etag_r.json()['status'])
     return
 
-def run(out, err, url, username, password, encValData, mirror, search_query, file_list=None, bot_token=None,
-        processes=None, include_unexpired_upload=False, dry_run=False, json_out=False):
+def run(out, err, url, username, password, encValData, mirror, search_query, file_list=None,
+        bot_token=None, local_file=None, processes=None, include_unexpired_upload=False,
+        dry_run=False, json_out=False):
     import functools
     import multiprocessing
 
@@ -992,7 +1005,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
     except multiprocessing.NotImplmentedError:
         nprocesses = 1
 
-    version = '1.18'
+    version = '1.19'
 
     try:
         ip_output = subprocess.check_output(
@@ -1022,7 +1035,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
         pool = multiprocessing.Pool(processes=processes)
         imap = pool.imap_unordered
 
-    jobs = fetch_files(session, url, search_query, out, include_unexpired_upload, file_list)
+    jobs = fetch_files(session, url, search_query, out, include_unexpired_upload, file_list, local_file)
     if not json_out:
         headers = '\t'.join(['Accession', 'Lab', 'Errors', 'Aliases', 'Upload URL',
                              'Upload Expiration'])
@@ -1127,6 +1140,9 @@ def main():
     parser.add_argument(
         '--file-list', default='',
         help="list of file accessions to check")
+    parser.add_argument(
+        '--local-file', default='',
+        help="path to local file to check")
     parser.add_argument('url', help="server to post to")
     args = parser.parse_args()
     run(**vars(args))
