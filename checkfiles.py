@@ -706,8 +706,10 @@ def check_file(config, session, url, job):
     if no_file_flag:
         return job
 
-    upload_url = job['upload_url']
-    local_path = os.path.join(config['mirror'], upload_url[len('s3://'):])
+    local_path = job.get('local_file')
+    if not local_path:
+        upload_url = job['upload_url']
+        local_path = os.path.join(config['mirror'], upload_url[len('s3://'):])
     # boolean standing for local .bed file creation
     is_local_bed_present = False
     if item['file_format'] == 'bed':
@@ -861,9 +863,8 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
                 graph.extend(local)
     # checkfiles using a query
     elif local_file:
-        print extract_accession(local_file)
         r = session.get(
-            urljoin(url, '/search/?field=@id&limit=all&type=File&' + search_query))
+            urljoin(url, '/search/?field=@id&limit=all&type=File&accession=' + extract_accession(local_file)))
         try:
             r.raise_for_status()
         except requests.HTTPError:
@@ -914,6 +915,9 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
         if errors:
             # Probably a transient error
             job['skip'] = True
+
+        if local_file:
+            job['local_file'] = local_file
 
         yield job
 
@@ -1041,8 +1045,6 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
                              'Upload Expiration'])
         out.write(headers + '\n')
         out.flush()
-        err.write(headers + '\n')
-        err.flush()
     for job in imap(functools.partial(check_file, config, session, url), jobs):
         if not dry_run:
             patch_file(session, url, job)
