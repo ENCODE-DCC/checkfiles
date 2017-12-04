@@ -27,7 +27,7 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
     if dry_run:
         dr = "-- Dry Run"
 
-    version = '0.1'
+    version = '0.11'
 
     try:
         ip_output = subprocess.check_output(
