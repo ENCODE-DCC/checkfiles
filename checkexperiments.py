@@ -39,8 +39,10 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
     initiating_run = 'STARTING Checkexperiments version ' + \
         '{} ({}) ({}): {} on {} at {}'.format(
             version, url, search_query, dr, ip, datetime.datetime.now())
-    out.write(initiating_run + '\n')
+    out.write(initiating_run + '\nAward\tAccession\tcurrent status -> new status\tsubmitted date\n')
     out.flush()
+    err.write(initiating_run + '\nAward\tAccession\terror message\n')
+    err.flush()
     if bot_token:
         sc = SlackClient(bot_token)
         sc.api_call(
@@ -154,6 +156,11 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                                 str(min_depth['modENCODE-chip']) + '\n')
                             err.flush()
                             break
+                elif award_obj.get('rfa') == 'modERN':
+                    err.write(
+                        award_obj.get('rfa') + '\t' +
+                        experiment_accession + '\texcluded from automatic screening\n')
+                    err.flush()
                 else:
                     if ex['assay_term_name'] in min_depth:
                         for rep in replicates_reads:
