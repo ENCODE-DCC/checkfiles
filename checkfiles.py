@@ -1018,7 +1018,16 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
     except subprocess.CalledProcessError as e:
         ip = ''
 
+    # waiting for complete indexing of the site prior to checkfiles run!
     
+    try:
+        r = session.get(urljoin(url, '_indexer')).json()['status']
+    except requests.exceptions.RequestException:
+        continue
+    else:
+        print (response)
+        #if response == 'waiting':
+
     initiating_run = 'STARTING Checkfiles version ' + \
         '{} ({}) ({}): with {} processes {} on {} at {}'.format(
             version, url, search_query, nprocesses, dr, ip, datetime.datetime.now())
