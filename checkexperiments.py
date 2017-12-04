@@ -142,61 +142,62 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                 if file_obj.get('replicate'):
                     submitted_replicates.add(file_obj.get('replicate'))
             if replicates and not replicates - submitted_replicates:
-                # check read depth:
-                depth_flag = False
-                if award_obj.get('rfa') == 'modENCODE':
-                    for rep in replicates_reads:
-                        if replicates_reads[rep] < min_depth['modENCODE-chip']:
-                            depth_flag = True
-                            err.write(
-                                award_obj.get('rfa') + '\t' + \
-                                experiment_accession + '\t' + rep + \
-                                '\treads_count=' + str(replicates_reads[rep]) + \
-                                '\texpected count=' + \
-                                str(min_depth['modENCODE-chip']) + '\n')
-                            err.flush()
-                            break
-                elif award_obj.get('rfa') == 'modERN':
+                if award_obj.get('rfa') == 'modERN':
                     err.write(
                         award_obj.get('rfa') + '\t' +
                         experiment_accession + '\texcluded from automatic screening\n')
                     err.flush()
                 else:
-                    if ex['assay_term_name'] in min_depth:
+                    # check read depth:
+                    depth_flag = False
+                    if award_obj.get('rfa') == 'modENCODE':
                         for rep in replicates_reads:
-                            if replicates_reads[rep] < min_depth[ex['assay_term_name']]:
+                            if replicates_reads[rep] < min_depth['modENCODE-chip']:
                                 depth_flag = True
                                 err.write(
                                     award_obj.get('rfa') + '\t' + \
                                     experiment_accession + '\t' + rep + \
-                                    '\treads_count=' + \
-                                    str(replicates_reads[rep]) + '\texpected count=' + \
-                                    str(min_depth[ex['assay_term_name']]) + '\n')
+                                    '\treads_count=' + str(replicates_reads[rep]) + \
+                                    '\texpected count=' + \
+                                    str(min_depth['modENCODE-chip']) + '\n')
                                 err.flush()
                                 break
-                if not depth_flag:
-                    pass_audit = True
-                    try:
-                        audit_request = session.get(urljoin(
-                            url,
-                            '/' + experiment_accession + '?frame=page&format=json'))
-                        audit_obj = audit_request.json().get('audit')
-                        if audit_obj.get("ERROR"):
-                            pass_audit = False
-                    except requests.exceptions.RequestException:
-                        continue
                     else:
-                        if pass_audit:
-                            out.write(
-                                award_obj.get('rfa') + '\t' + \
-                                experiment_accession + '\t' + ex['status'] + \
-                                '\t-> submitted\t' + max(dates).strftime("%Y-%m-%d") + '\n')
-                            out.flush()
+                        if ex['assay_term_name'] in min_depth:
+                            for rep in replicates_reads:
+                                if replicates_reads[rep] < min_depth[ex['assay_term_name']]:
+                                    depth_flag = True
+                                    err.write(
+                                        award_obj.get('rfa') + '\t' + \
+                                        experiment_accession + '\t' + rep + \
+                                        '\treads_count=' + \
+                                        str(replicates_reads[rep]) + '\texpected count=' + \
+                                        str(min_depth[ex['assay_term_name']]) + '\n')
+                                    err.flush()
+                                    break
+                    if not depth_flag:
+                        pass_audit = True
+                        try:
+                            audit_request = session.get(urljoin(
+                                url,
+                                '/' + experiment_accession + '?frame=page&format=json'))
+                            audit_obj = audit_request.json().get('audit')
+                            if audit_obj.get("ERROR"):
+                                pass_audit = False
+                        except requests.exceptions.RequestException:
+                            continue
                         else:
-                            err.write(
-                                award_obj.get('rfa') + '\t' +
-                                experiment_accession + '\taudit errors\n')
-                            err.flush()
+                            if pass_audit:
+                                out.write(
+                                    award_obj.get('rfa') + '\t' + \
+                                    experiment_accession + '\t' + ex['status'] + \
+                                    '\t-> submitted\t' + max(dates).strftime("%Y-%m-%d") + '\n')
+                                out.flush()
+                            else:
+                                err.write(
+                                    award_obj.get('rfa') + '\t' +
+                                    experiment_accession + '\taudit errors\n')
+                                err.flush()
 
 
     finishing_run = 'FINISHED Checkexperiments at {}'.format(datetime.datetime.now())
