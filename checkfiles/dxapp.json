@@ -1,0 +1,148 @@
+{
+  "name": "checkfiles",
+  "title": "ENCODEd checkfiles",
+  "summary": "Applies validation checks to files in ENCODEd.",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "inputSpec": [
+    {
+      "name": "mirror",
+      "class": "string",
+      "optional": true,
+      "help": ""
+    },
+    {
+      "name": "encValData",
+      "class": "string",
+      "optional": true,
+      "help": "encValData location"
+    },
+    {
+      "name": "bot_token",
+      "class": "string",
+      "optional": true,
+      "help": "Slack bot token"
+    },
+    {
+      "name": "key",
+      "class": "string",
+      "optional": true,
+      "help": "key into DCC Credentials or default for logged-in user"
+    },
+    {
+      "name": "out",
+      "class": "string",
+      "optional": true,
+      "help": "Filename for output (default stdout)"
+    },
+    {
+      "name": "err",
+      "class": "string",
+      "optional": true,
+      "help": "Filename for errors (default stderr)"
+    },
+    {
+      "name": "processes",
+      "class": "int",
+      "optional": true,
+      "help": "defaults to cpu count, use 0 for debugging in a single process"
+    },
+    {
+      "name": "include_unexpired_upload",
+      "class": "boolean",
+      "optional": true,
+      "help": "include files whose upload credentials have not yet expired (may be replaced!)"
+    },
+    {
+      "name": "dry_run",
+      "class": "boolean",
+      "optional": true,
+      "help": "Don't update status, just check"
+    },
+    {
+      "name": "search_query",
+      "class": "string",
+      "optional": true,
+      "help": "override the file search query, e.g. 'accession=ENCFF000ABC'"
+    },
+    {
+      "name": "file_list",
+      "class": "array:string",
+      "optional": true,
+      "help": "list of file accessions to check"
+    },
+    {
+      "name": "local_file",
+      "class": "string",
+      "optional": true,
+      "help": "path to local file to check"
+    },
+    {
+      "name": "dx_file",
+      "class": "file",
+      "optional": true,
+      "help": "DNAnexus file to check"
+    },
+    {
+      "name": "url",
+      "class": "string",
+      "optional": true,
+      "help": "server to post to"
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "out",
+      "label": "Output",
+      "class": "file",
+      "patterns": [
+        "*"
+      ],
+      "help": "File to store the output stream",
+      "optional": true
+    },
+    {
+      "name": "err",
+      "label": "Error log",
+      "class": "file",
+      "patterns": [
+        "*"
+      ],
+      "help": "File to store the error log",
+      "optional": true
+    }
+  ],
+  "runSpec": {
+    "timeoutPolicy": {
+      "*": {
+        "hours": 48
+      }
+    },
+    "interpreter": "python2.7",
+    "file": "src/checkfiles.py",
+    "systemRequirements": {
+      "*": {
+        "instanceType": "mem1_ssd1_x4"
+      }
+    },
+    "distribution": "Ubuntu",
+    "release": "14.04",
+    "assetDepends": [
+      {
+        "name": "common_asset",
+        "project": "project-BKpvFg00VBPV975PgJ6Q03v6",
+        "version": "0.0.1",
+        "folder": "/ChIP-seq/assets/"
+      }
+    ],
+    "execDepends": [
+    ]
+  },
+  "access": {
+    "project": "CONTRIBUTE",
+    "allProjects": "VIEW",
+    "network": [
+      "*"
+    ]
+  }
+}
