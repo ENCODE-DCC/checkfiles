@@ -39,12 +39,15 @@ def main(**kwargs):
             continue
         if isinstance(v, str) or isinstance(v, unicode) or isinstance(v, int):
             tokens.append(' '.join(["--"+k.replace('_', '-'), str(v)]))
-    tokens.append("--url %s --username %s --password %s" % (server, authid, authpw))
+    tokens.append("--username %s --password %s" % (authid, authpw))
 
     if 'dx_file' in kwargs:
         dxfile = dxpy.DXFile(kwargs.get('dx_file'))
         local_file = dxpy.download_dxfile(dxfile, dxfile.name)
         tokens.append("--local-file %s" % (dxfile.name))
+
+    # this needs to be the last token
+    tokens.append(server)
 
     checkfiles_command = ' '.join(tokens)
     print(checkfiles_command)
