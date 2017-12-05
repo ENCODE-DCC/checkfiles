@@ -133,6 +133,12 @@
         "project": "project-BKpvFg00VBPV975PgJ6Q03v6",
         "version": "0.0.1",
         "folder": "/ChIP-seq/assets/"
+      },
+      {
+        "name": "checkfiles_asset",
+        "project": "project-BKp5K980bpZZ096Xp1XQ02fZ",
+        "version": "0.0.1",
+        "folder": "/"
       }
     ],
     "execDepends": [
