@@ -703,14 +703,14 @@ def check_file(config, session, url, job):
     if job.get('skip'):
         return job
 
-    no_file_flag = item.get('no_file_available')
-    if no_file_flag:
-        return job
-
     local_path = job.get('local_file')
     if not local_path:
-        upload_url = job['upload_url']
-        local_path = os.path.join(config['mirror'], upload_url[len('s3://'):])
+        no_file_flag = item.get('no_file_available')
+        if no_file_flag:
+            return job
+        else:
+            upload_url = job['upload_url']
+            local_path = os.path.join(config['mirror'], upload_url[len('s3://'):])
     # boolean standing for local .bed file creation
     is_local_bed_present = False
     if item['file_format'] == 'bed':
