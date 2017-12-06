@@ -7,3 +7,7 @@ all:
 	sudo apt-get update
 	sudo apt-get -y install python3-pip
 	sudo pip3 install slackclient
+	sudo curl -sS -L -o /usr/local/bin/validateFiles http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/validateFiles
+	sudo chmod +x /usr/local/bin/validateFiles
+	sudo mkdir /opt/encValData
+	sudo git clone --depth 1 https://github.com/ENCODE-DCC/encValData /opt/encValData
