@@ -107,3 +107,7 @@ ENV/
 /lib/
 pip-selfcheck.json
 pyvenv.cfg
+
+checkfiles/.DS_Store
+
+.DS_Store
