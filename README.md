@@ -49,7 +49,7 @@ To run on a DNAnexus file with --dry-run::
 
 To see full syntax and options::
 
-    dx run checkfiles::checkfiles --help
+    dx run checkfiles:checkfiles --help
 
 NOTE: stdout and stderr are currently sent to the DNAnexus log.  Saving those streams to files it not yet supported.
 
