@@ -63,18 +63,22 @@ def main(**kwargs):
     tokens_safe.append(server)
     logger.info(' '.join(tokens_safe))
 
-    tokens.append("--username %s --password %s" % ("."*len(authid), "."*len(authpw)))
+    tokens.append("--username %s --password %s" % (authid, authpw))
     # this needs to be the last token
     tokens.append(server)
 
     checkfiles_command = ' '.join(tokens)
     subprocess.check_call(shlex.split(checkfiles_command))
-    # out = dxpy.upload_local_file("out")
-    # err = dxpy.upload_local_file("err")
 
     output = {}
-    # output["out"] = dxpy.dxlink(out)
-    # output["err"] = dxpy.dxlink(err)
+    outfilename = kwargs.get('out')
+    errfilename = kwargs.get('err')
+    if outfilename:
+        out = dxpy.upload_local_file(outfilename)
+        output.update({'out': dxpy.dxlink(out)})
+    if errfilename:
+        err = dxpy.upload_local_file(errfilename)
+        output.update({'err': dxpy.dxlink(err)})
 
     return output
 
