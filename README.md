@@ -37,23 +37,21 @@ Supply arguments for checkfiles after a ``--`` separator::
 Run on DNAnexus
 ---------------
 
-Prerequisites::
-
-    DNAnexus login
-    Access to the DNAnexus checkfiles project (everyone in DNAnexus org-cherrylab should have this)
-    A DNAnexus path of a file to check in the form project-name:/dir/subdir/filename
-
-To see syntax and options::
-
-    dx run checkfiles:checkfiles --help
+Prerequisites
+* DNAnexus login
+* dx toolkit
+* Access to the DNAnexus checkfiles project (everyone in DNAnexus org-cherrylab should have this)
+* A DNAnexus path of a file to check in the form project-name:/dir/subdir/filename
 
 To run on a DNAnexus file with --dry-run::
 
     dx run -i dry_run=t -i dx_file="project-name:/dir/subdir/filename" --watch --yes checkfiles:checkfiles
 
-To see full command options::
+To see full syntax and options::
 
     dx run checkfiles::checkfiles --help
+
+NOTE: stdout and stderr are currently sent to the DNAnexus log.  Saving those streams to files it not yet supported.
 
 Deploy to DNAnexus
 ------------------
