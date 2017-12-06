@@ -27,9 +27,52 @@ Install required packages for running deploy::
     pyvenv .
     bin/pip install -r requirements-deploy.txt
 
-Deploy
-------
+Deploy to AWS
+-------------
 
 Supply arguments for checkfiles after a ``--`` separator::
 
     bin/python deploy.py -- --username ACCESS_KEY_ID --password SECRET_ACCESS_KEY --bot-token SLACK-BOT-TOKEN https://www.encodeproject.org
+
+Run on DNAnexus
+---------------
+
+Prerequisites::
+
+    DNAnexus login
+    Access to the DNAnexus checkfiles project (everyone in DNAnexus org-cherrylab should have this)
+    A DNAnexus path of a file to check in the form project-name:/dir/subdir/filename
+
+To see syntax and options::
+
+    dx run checkfiles:checkfiles --help
+
+To run on a DNAnexus file with --dry-run::
+
+    dx run -i dry_run=t -i dx_file="project-name:/dir/subdir/filename" --watch --yes checkfiles:checkfiles
+
+To see full command options::
+
+    dx run checkfiles::checkfiles --help
+
+Deploy to DNAnexus
+------------------
+
+You only need to do this if you have changed the code.
+
+If you don't aleady have a DNAnexus login token::
+
+    dx login
+
+Select the checkfiles project on DNAnexus::
+
+    dx select checkfiles
+
+Only if you have changed the checkfiles asset Makefile, in the checkfiles repo root::
+
+    dx build_asset checkfiles_asset
+
+Build the new applet::
+
+    dx build -a checkfiles
+
