@@ -1,4 +1,4 @@
-"""\
+"""
 Run status check on experiments.
 
 Example.
@@ -7,7 +7,6 @@ Example.
         --out experiments_statuses.log https://www.encodeproject.org
 """
 import datetime
-import json
 import sys
 import copy
 import os.path
@@ -17,6 +16,7 @@ import requests
 from slackclient import SlackClient
 
 EPILOG = __doc__
+
 
 def run(out, err, url, username, password, search_query, accessions_list=None, bot_token=None, dry_run=False):
     session = requests.Session()
@@ -36,9 +36,13 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
     except subprocess.CalledProcessError as e:
         ip = ''
 
-    initiating_run = 'STARTING Checkexperiments version ' + \
+    initiating_run = (
+        'STARTING Checkexperiments version '
         '{} ({}) ({}): {} on {} at {}'.format(
-            version, url, search_query, dr, ip, datetime.datetime.now())
+            version, url, search_query, dr, ip, datetime.datetime.now()
+        )
+    )
+
     out.write(initiating_run + '\nAward\tAccession\tcurrent status -> new status\tsubmitted date\n')
     out.flush()
     err.write(initiating_run + '\nAward\tAccession\terror message\n')
@@ -84,7 +88,7 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
         r = session.get(
             urljoin(
                 url,
-                '/search/?type=Experiment' \
+                '/search/?type=Experiment'
                 '&format=json&frame=object&limit=all&' + search_query))
         try:
             r.raise_for_status()
@@ -113,17 +117,15 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                     if replicate_obj.get('status') not in ['deleted']:
                         replicates.add(replicate_obj['@id'])
                         replicates_reads[replicate_obj['@id']] = 0
-                if  ex.get('files'):
+                if ex.get('files'):
+                    excluded_statuses = ['uploading', 'content error', 'upload failed']
                     for file_acc in ex.get('files'):
                         file_request = session.get(urljoin(
                             url,
                             file_acc + '?frame=object&format=json'))
                         file_obj = file_request.json()
-                        if file_obj.get('file_format') == 'fastq' and \
-                           file_obj.get('status') not in ['uploading',
-                                                          'content error',
-                                                          'upload failed',
-                                                         ]:
+                        if (file_obj.get('file_format') == 'fastq' and
+                                file_obj.get('status') not in excluded_statuses):
                             file_date = datetime.datetime.strptime(
                                 file_obj['date_created'][:10], "%Y-%m-%d")
                             dates.append(file_date)
@@ -133,10 +135,9 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                                     replicates_reads[file_obj.get('replicate')] += \
                                         file_obj.get('read_count')
         except requests.exceptions.RequestException as e:
-            print (e)
+            print(e)
             continue
         else:
-            
             submitted_replicates = set()
             for file_obj in files:
                 if file_obj.get('replicate'):
@@ -154,12 +155,18 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                         for rep in replicates_reads:
                             if replicates_reads[rep] < min_depth['modENCODE-chip']:
                                 depth_flag = True
-                                err.write(
-                                    award_obj.get('rfa') + '\t' + \
-                                    experiment_accession + '\t' + rep + \
-                                    '\treads_count=' + str(replicates_reads[rep]) + \
-                                    '\texpected count=' + \
-                                    str(min_depth['modENCODE-chip']) + '\n')
+                                msg = (
+                                    '{}\t{}\t{}'
+                                    '\ttreads_count={}'
+                                    '\texpected_count={}\n'.format(
+                                        award_obj.get('rfa'),
+                                        experiment_accession,
+                                        rep,
+                                        str(replicates_reads[rep]),
+                                        str(min_depth['modENCODE-chip'])
+                                    )
+                                )
+                                err.write(msg)
                                 err.flush()
                                 break
                     else:
@@ -167,12 +174,18 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                             for rep in replicates_reads:
                                 if replicates_reads[rep] < min_depth[ex['assay_term_name']]:
                                     depth_flag = True
-                                    err.write(
-                                        award_obj.get('rfa') + '\t' + \
-                                        experiment_accession + '\t' + rep + \
-                                        '\treads_count=' + \
-                                        str(replicates_reads[rep]) + '\texpected count=' + \
-                                        str(min_depth[ex['assay_term_name']]) + '\n')
+                                    msg = (
+                                        '{}\t{}\t{}\t'
+                                        'reads_count={}\t'
+                                        'while the minimal sequencing depth={}\n'.format(
+                                            award_obj.get('rfa'),
+                                            experiment_accession,
+                                            rep,
+                                            str(replicates_reads[rep]),
+                                            str(min_depth[ex['assay_term_name']])
+                                        )
+                                    )
+                                    err.write(msg)
                                     err.flush()
                                     break
                     if not depth_flag:
@@ -188,18 +201,26 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                             continue
                         else:
                             if pass_audit:
-                                out.write(
-                                    award_obj.get('rfa') + '\t' + \
-                                    experiment_accession + '\t' + ex['status'] + \
-                                    '\t-> submitted\t' + max(dates).strftime("%Y-%m-%d") + '\n')
+                                msg = (
+                                    '{}\t{}\t{}\t'
+                                    '-> submitted\t{}\n'.format(
+                                        award_obj.get('rfa'),
+                                        experiment_accession,
+                                        ex['status'],
+                                        max(dates).strftime("%Y-%m-%d")
+                                    )
+                                )
+                                out.write(msg)
                                 out.flush()
                             else:
-                                err.write(
-                                    award_obj.get('rfa') + '\t' +
-                                    experiment_accession + '\taudit errors\n')
+                                msg = (
+                                    '{}\t{}\taudit errors\n'.format(
+                                        award_obj.get('rfa'),
+                                        experiment_accession    
+                                    )
+                                )
+                                err.write(msg)
                                 err.flush()
-
-
     finishing_run = 'FINISHED Checkexperiments at {}'.format(datetime.datetime.now())
     out.write(finishing_run + '\n')
     out.flush()
@@ -229,6 +250,7 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
             text=finishing_run,
             as_user=True
         )
+
 
 def main():
     import argparse
