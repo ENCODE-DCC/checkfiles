@@ -47,6 +47,10 @@ To run on a DNAnexus file with --dry-run::
 
     dx run -i dry_run=t -i dx_file="project-name:/dir/subdir/filename" --watch --yes checkfiles:checkfiles
 
+To capture output and error streams to a file that will be saved to the current DNAnexus project and send those to slack::
+
+    dx run -i dx_file="project-name:/dir/subdir/filename" -i bot_token="mybot-token" -i out="myoutfile" -i err="myerrfile" --watch --yes checkfiles:checkfiles
+
 To see full syntax and options::
 
     dx run checkfiles:checkfiles --help
