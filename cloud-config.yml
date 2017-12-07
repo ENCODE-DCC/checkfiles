@@ -1,10 +1,10 @@
 #cloud-config
 
+ssh_authorized_keys:
+  - %(LOCAL_SSH_KEY)s
+
 # Launch instance with network interfaces configured to the local IP addresses we references in the config.
 # $ aws ec2 run-instances --user-data file://check-files.yml --iam-instance-profile Name="encoded-instance" --image-id ami-5a928a3b --region us-west-2 --security-groups ssh-http-https --instance-type c4.xlarge
-
-bootcmd:
-- cloud-init-per once ssh-users-ca echo "TrustedUserCAKeys /etc/ssh/users_ca.pub" >> /etc/ssh/sshd_config
 
 output:
   all: '| tee -a /var/log/cloud-init-output.log'
@@ -25,6 +25,8 @@ packages:
 runcmd:
 - set -ex
 - pip install awscli
+- mv /home/ubuntu/.ssh/authorized_keys /home/ubuntu/.ssh/authorized_keys2
+- aws s3 cp --region=us-west-2 %(S3_AUTH_KEYS)s /home/ubuntu/.ssh/authorized_keys
 - systemctl daemon-reload  # See https://bugs.launchpad.net/cloud-init/+bug/1449318
 - mkdir -p /s3/encode-files
 - mkdir -p /s3/encoded-files-dev
@@ -76,8 +78,6 @@ write_files:
 - path: /opt/checkfiles_args.txt
   content: |
     %(ARGS)s
-- path: /etc/ssh/users_ca.pub
-  content: ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAv/ymOcnN4LhM4NACc3Or116XXJ6KytuOgB/+1qNkOFBqBosrn7cmJ35rsoNHRgYNrCsRE9ch74RKsN6H72FtSJgBhGh/9oUK7Os6Fqt3/ZZXxgxIx6ubs/MTgrxrAnujiBxUXMXQhLKMriNMpo8mt4nGYVtLk9PBjiyfncaS8H9ZKoNio9dhP8bmTuYvioAI35dqKdSlVLyzr/XkZxia8Ki+pQ0N6uuiEwMR3ToM+LSp8wpFOOAiu4PEAujRW7us/+1hlpKWfn0J7/V3826joHE+I967Vg/+ikcVhF77JjK1nib879VgCWfmn1HPQosIpk4yJfVgGvRVI7I2nfBPVw== encoded@demo-l.encodedcc.org
 - path: /etc/systemd/system/cloud-final.service.d/override.conf
   content: |
     [Service]
