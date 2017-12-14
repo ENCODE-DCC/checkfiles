@@ -1085,16 +1085,15 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
             if not dry_run:
                 patch_file(session, url, job)
 
-            if not job.get('skip'):
-                errors_string = str(job.get('errors', {'errors': None}))
-            elif not errors['file_not_found']:
+            errors_string = job.get('errors', {'errors': None})
+            if job.get('skip') and errors_string and not job['errors'].get('file_not_found'):
                 errors_string = str({'errors':
                                      'status have not been changed, the file '
                                      'check was skipped due to the file unavailability on S3'})
             tab_report = '\t'.join([
                 job['item'].get('accession', 'UNKNOWN'),
                 job['item'].get('lab', 'UNKNOWN'),
-                errors_string,
+                str(errors_string),
                 str(job['item'].get('aliases', ['n/a'])),
                 job.get('upload_url', ''),
                 job.get('upload_expiration', ''),
