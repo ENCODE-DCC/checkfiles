@@ -1086,7 +1086,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
                 patch_file(session, url, job)
 
             errors_string = job.get('errors', {'errors': None})
-            if job.get('skip') and (not error_string or not job['errors'].get('file_not_found')):
+            if job.get('skip') and not error_string.get('errors'):
                 errors_string = str({'errors':
                                      'status have not been changed, the file '
                                      'check was skipped due to the file unavailability on S3'})
