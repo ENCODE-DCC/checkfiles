@@ -900,7 +900,10 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
             # Only check files that will not be changed during the check.
             if job['run'] < job['upload_expiration']:
                 if not include_unexpired_upload:
-                    continue
+                    job['errors']['unexpired_credentials'] = ('File status '
+                    'have not been changed, the file '
+                    'check was skipped due to file\'s '
+                    'unexpired upload credentials')
         else:
             job['errors']['get_upload_url_request'] = \
                 '{} {}\n{}'.format(r.status_code, r.reason, r.text)
@@ -1084,9 +1087,11 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
         for job in imap(functools.partial(check_file, config, session, url), jobs):
             if not dry_run:
                 patch_file(session, url, job)
-
-            errors_string = job.get('errors', {'errors': None})
-            if job.get('skip') and not error_string.get('errors'):
+            errors_string = {'errors': None}
+            jobs_errors = job.get('errors')
+            if jobs_errors:
+                errors_string = jobs_errors
+            elif job.get('skip'):
                 errors_string = str({'errors':
                                      'status have not been changed, the file '
                                      'check was skipped due to the file unavailability on S3'})
