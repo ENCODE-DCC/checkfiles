@@ -5,6 +5,9 @@ import shlex
 import subprocess
 import sys
 
+from os.path import expanduser
+
+
 BDM = [
     {
         'DeviceName': '/dev/sda1',
@@ -20,6 +23,43 @@ BDM = [
 def nameify(s):
     name = ''.join(c if c.isalnum() else '-' for c in s.lower()).strip('-')
     return re.subn(r'\-+', '-', name)[0]
+
+
+def read_ssh_key():
+    home = expanduser("~")
+    ssh_key_path = home + '/' + '.ssh/id_rsa.pub'
+    ssh_keygen_args = ['ssh-keygen', '-l', '-f', ssh_key_path]
+    fingerprint = subprocess.check_output(
+        ssh_keygen_args
+    ).decode('utf-8').strip()
+    if fingerprint:
+        with open(ssh_key_path, 'r') as f:
+            ssh_pub_key = f.readline().strip()
+            return ssh_pub_key
+
+
+def get_user_data(commit, config_file, data_insert, profile_name):
+    cmd_list = ['git', 'show', commit + config_file]
+    config_template = subprocess.check_output(cmd_list).decode('utf-8')
+    ssh_pub_key = read_ssh_key()
+    if not ssh_pub_key:
+        print(
+            "WARNING: User is not authorized with ssh access to "
+            "new instance because they have no ssh key"
+        )
+    data_insert['LOCAL_SSH_KEY'] = ssh_pub_key
+    # aws s3 authorized_keys folder
+    auth_base = 's3://encoded-conf-prod/ssh-keys'
+    auth_type = 'prod'
+    if profile_name != 'production':
+        auth_type = 'demo'
+    auth_keys_dir = '{auth_base}/{auth_type}-authorized_keys'.format(
+        auth_base=auth_base,
+        auth_type=auth_type,
+    )
+    data_insert['S3_AUTH_KEYS'] = auth_keys_dir
+    user_data = config_template % data_insert
+    return user_data
 
 
 def run(image_id, instance_type,
@@ -55,15 +95,13 @@ def run(image_id, instance_type,
             ])):
         print('An instance already exists with name: %s' % name)
         sys.exit(1)
-
-    user_data = subprocess.check_output(
-        ['git', 'show', commit + ':cloud-config.yml']
-        ).decode('utf-8')
-    user_data = user_data % {
+    # Add template data to cloud config file
+    config_file = ':cloud-config.yml'
+    data_insert = {
         'COMMIT': commit,
         'ARGS': ' '.join(shlex.quote(arg) for arg in args),
     }
-
+    user_data = get_user_data(commit, config_file, data_insert, 'demo')
     reservation = ec2.create_instances(
         MinCount=1,
         MaxCount=1,
