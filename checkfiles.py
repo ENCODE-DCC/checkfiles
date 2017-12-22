@@ -1081,7 +1081,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
         jobs = fetch_files(session, url, search_query, out, include_unexpired_upload, file_list, local_file)
         if not json_out:
             headers = '\t'.join(['Accession', 'Lab', 'Errors', 'Aliases', 'Upload URL',
-                                'Upload Expiration'])
+                                 'Upload Expiration'])
             out.write(headers + '\n')
             out.flush()
         for job in imap(functools.partial(check_file, config, session, url), jobs):
@@ -1093,7 +1093,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
                 errors_string = jobs_errors
             elif job.get('skip'):
                 errors_string = str({'errors':
-                                     'status have not been changed, the file '
+                                     'File status have not been changed, the file\' '
                                      'check was skipped due to the file unavailability on S3'})
             tab_report = '\t'.join([
                 job['item'].get('accession', 'UNKNOWN'),
