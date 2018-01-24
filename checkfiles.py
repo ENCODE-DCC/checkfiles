@@ -479,22 +479,26 @@ def process_fastq_file(job, fastq_data_stream, session, url):
         for k in sorted(read_lengths_dictionary.keys()):
             read_lengths_list.append((k, read_lengths_dictionary[k]))
 
-        if 'read_length' in item and item['read_length'] > 2:
-            process_read_lengths(read_lengths_dictionary,
-                                 read_lengths_list,
-                                 item['read_length'],
-                                 read_count,
-                                 0.9,
-                                 errors,
-                                 result)
-        else:
-            errors['read_length'] = 'no specified read length in the uploaded fastq file, ' + \
-                                    'while read length(s) found in the file were {}. '.format(
-                                    ', '.join(map(str, read_lengths_list)))
-            update_content_error(errors,
-                                 'Fastq file metadata lacks read length information, ' +
-                                 'but the file contains read length(s) {}'.format(
-                                     ', '.join(map(str, read_lengths_list))))
+        #excluding pacbio from read_length verification
+        platform_uuid = get_platform_uuid(job.get('@id'), errors, session, url)
+        if platform_uuid not in ['ced61406-dcc6-43c4-bddd-4c977cc676e8',
+                                 'c7564b38-ab4f-4c42-a401-3de48689a998']:
+            if 'read_length' in item and item['read_length'] > 2:
+                process_read_lengths(read_lengths_dictionary,
+                                     read_lengths_list,
+                                     item['read_length'],
+                                     read_count,
+                                     0.9,
+                                     errors,
+                                     result)
+            else:
+                errors['read_length'] = 'no specified read length in the uploaded fastq file, ' + \
+                                        'while read length(s) found in the file were {}. '.format(
+                                            ', '.join(map(str, read_lengths_list)))
+                update_content_error(errors,
+                                     'Fastq file metadata lacks read length information, ' +
+                                     'but the file contains read length(s) {}'.format(
+                                         ', '.join(map(str, read_lengths_list))))
         # signatures
         signatures_for_comparison = set()
         is_UMI = False
@@ -588,6 +592,20 @@ def compare_flowcell_details(flowcell_details_1, flowcell_details_2):
         return True
     # no intersection
     return False
+
+
+def get_platform_uuid(job_id, errors, session, url):
+    query = job_id +'?datastore=database&frame=embedded&format=json'
+    try:
+        r = session.get(urljoin(url, query))
+    except requests.exceptions.RequestException as e:
+        errors['lookup_for_platform'] = ('Network error occured, while looking for '
+                                         'platform on the portal. {}').format(str(e))
+    else:
+        platform = r.json().get('platform')
+        if platfrom:
+            return platform.get('uuid')
+        return platform  
 
 
 def check_for_fastq_signature_conflicts(session,
