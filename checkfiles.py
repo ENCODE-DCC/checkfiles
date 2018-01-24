@@ -595,17 +595,25 @@ def compare_flowcell_details(flowcell_details_1, flowcell_details_2):
 
 
 def get_platform_uuid(job_id, errors, session, url):
-    query = job_id +'?datastore=database&frame=embedded&format=json'
+    query = job_id +'?datastore=database&frame=object&format=json'
     try:
         r = session.get(urljoin(url, query))
     except requests.exceptions.RequestException as e:
         errors['lookup_for_platform'] = ('Network error occured, while looking for '
                                          'platform on the portal. {}').format(str(e))
     else:
-        platform = r.json().get('platform')
-        if platform:
-            return platform.get('uuid')
-        return platform  
+        platform_id = r.json().get('platform')
+        if platform_id:
+            query = platform_id +'?datastore=database&frame=object&format=json'
+            try:
+                r = session.get(urljoin(url, query))
+            except requests.exceptions.RequestException as e:
+                errors['lookup_for_platform'] = ('Network error occured, while looking for '
+                                                'platform on the portal. {}').format(str(e))
+            else:
+                platform_uuid = r.json().get('uuid')
+                return platform_uuid
+        return platform_id  
 
 
 def check_for_fastq_signature_conflicts(session,
