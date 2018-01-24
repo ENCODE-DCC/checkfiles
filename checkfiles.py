@@ -603,7 +603,7 @@ def get_platform_uuid(job_id, errors, session, url):
                                          'platform on the portal. {}').format(str(e))
     else:
         platform = r.json().get('platform')
-        if platfrom:
+        if platform:
             return platform.get('uuid')
         return platform  
 
