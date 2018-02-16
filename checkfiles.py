@@ -277,6 +277,19 @@ def process_new_illumina_prefix(read_name,
     return old_illumina_current_prefix
 
 
+def process_pacbio_read_name_pattern(
+        read_name,
+        signatures_set,
+        movie_identifier
+        ):
+    arr = re.split(r'/', read_name)
+    if len(arr) > 1:
+        movie_identifier = arr[0]
+        signatures_set.add(
+            'pacbio:0:1::' + movie_identifier)
+    return movie_identifier
+
+
 def process_old_illumina_read_name_pattern(read_name,
                                            read_numbers_set,
                                            signatures_set,
@@ -318,6 +331,7 @@ def process_read_name_line(read_name_line,
                            read_name_pattern,
                            special_read_name_pattern,
                            srr_read_name_pattern,
+                           pacbio_read_name_pattern,
                            old_illumina_current_prefix,
                            read_numbers_set,
                            signatures_no_barcode_set,
@@ -355,6 +369,24 @@ def process_read_name_line(read_name_line,
                                                                  signatures_set,
                                                                  read_lengths_dictionary,
                                                                  errors, True)
+        elif pacbio_read_name_pattern.match(read_name):
+            # pacbio reads include: 
+            # movie identifier that includes the time of run start (m140415_143853)
+            # instrment serial number (42175)
+            # SMRT cell barcode (c100635972550000001823121909121417)
+            # set number
+            # part number
+            # m140415_143853_42175_c100635972550000001823121909121417_s1_p0/....
+            movie_identifier = read_name.split('/')[0]
+            if len(movie_identifier) > 0:
+                process_pacbio_read_name_pattern(
+                    read_name,
+                    signatures_set,
+                    movie_identifier
+                )
+            else:
+                errors['fastq_format_readname'] = read_name   
+
         else:
             # unrecognized read_name_format
             # current convention is to include WHOLE
@@ -425,6 +457,10 @@ def process_fastq_file(job, fastq_data_stream, session, url):
         '^(@SRR[\d.]+)$'
     )
 
+    pacbio_read_name_pattern = re.compile(
+        '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$'
+    ) 
+
     read_numbers_set = set()
     signatures_set = set()
     signatures_no_barcode_set = set()
@@ -448,6 +484,7 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                             read_name_pattern,
                             special_read_name_pattern,
                             srr_read_name_pattern,
+                            pacbio_read_name_pattern,
                             old_illumina_current_prefix,
                             read_numbers_set,
                             signatures_no_barcode_set,
