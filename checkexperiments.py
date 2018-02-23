@@ -147,10 +147,9 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                         file_obj = file_request.json()
                         if file_obj.get('file_format') == 'fastq' and \
                            file_obj.get('status') not in erroneous_status:
-                            file_replicate = file_obj.get('replicate')
+                            replicate_id  = file_obj.get('replicate')
                             read_count = file_obj.get('read_count')
-                            if read_count and file_replicate:
-                                replicate_id = file_replicate.get('@id')
+                            if read_count and replicate_id:
                                 submitted_replicates.add(replicate_id)
                                 if replicate_id in replicates_reads:
                                     run_type = file_obj.get('run_type')
