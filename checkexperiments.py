@@ -112,6 +112,7 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
             (award_rfa == 'modENCODE' and assay_term_name != 'ChIP-seq')):
             err.write(
                 str(award_rfa) + '\t' +
+                assay_term_name + '\t' +
                 str(exp_accession) + '\texcluded from automatic screening\n')
             err.flush()
             continue
@@ -185,10 +186,11 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                         # low read depth in replicate + details
                         submitted_flag = False
                         err.write(
-                            award_rfa + '\t' + \
-                            exp_accession + '\t' + rep + \
-                            '\treads_count=' + str(replicates_reads[rep]) + \
-                            '\texpected count=' + \
+                            award_rfa + '\t' +
+                            assay_term_name + '\t' +
+                            exp_accession + '\t' + rep +
+                            '\treads_count=' + str(replicates_reads[rep]) +
+                            '\texpected count=' +
                             str(minimal_read_depth_requirements[key]) + '\n')
                         err.flush()
                         break
@@ -208,13 +210,15 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                     else:
                         if pass_audit:
                             out.write(
-                                award_rfa + '\t' + \
-                                exp_accession + '\t' + ex['status'] + \
+                                award_rfa + '\t' +
+                                assay_term_name + '\t' +
+                                exp_accession + '\t' + ex['status'] +
                                 '\t-> submitted\t' + max(dates).strftime("%Y-%m-%d") + '\n')
                             out.flush()
                         else:
                             err.write(
                                 award_rfa + '\t' +
+                                assay_term_name + '\t' +
                                 exp_accession + '\taudit errors\n')
                             err.flush()
 
