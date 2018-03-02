@@ -111,9 +111,11 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
             (award_rfa == 'modERN') or 
             (award_rfa == 'modENCODE' and assay_term_name != 'ChIP-seq')):
             err.write(
-                str(award_rfa) + '\t' +
-                assay_term_name + '\t' +
-                str(exp_accession) + '\texcluded from automatic screening\n')
+                '{}\t{}\t{}\texcluded from automatic screening\n'.format(
+                    award_rfa,
+                    assay_term_name,
+                    exp_accession)
+            )                
             err.flush()
             continue
 
@@ -186,12 +188,14 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                         # low read depth in replicate + details
                         submitted_flag = False
                         err.write(
-                            award_rfa + '\t' +
-                            assay_term_name + '\t' +
-                            exp_accession + '\t' + rep +
-                            '\treads_count=' + str(replicates_reads[rep]) +
-                            '\texpected count=' +
-                            str(minimal_read_depth_requirements[key]) + '\n')
+                            '{}\t{}\t{}\t{}\treads_count={}\texpected count={}\n'.format(
+                                award_rfa,
+                                assay_term_name,
+                                exp_accession,
+                                rep,
+                                replicates_reads[rep],
+                                minimal_read_depth_requirements[key])
+                        )
                         err.flush()
                         break
 
@@ -209,17 +213,24 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                         continue
                     else:
                         if pass_audit:
+                            submission_date = max(dates).strftime("%Y-%m-%d")
                             out.write(
-                                award_rfa + '\t' +
-                                assay_term_name + '\t' +
-                                exp_accession + '\t' + ex['status'] +
-                                '\t-> submitted\t' + max(dates).strftime("%Y-%m-%d") + '\n')
+                                '{}\t{}\t{}\t{}\t-> submitted\t{}\n'.format(
+                                    award_rfa,
+                                    assay_term_name,
+                                    exp_accession,
+                                    ex['status'],
+                                    submission_date)
+                            )
                             out.flush()
                         else:
                             err.write(
-                                award_rfa + '\t' +
-                                assay_term_name + '\t' +
-                                exp_accession + '\taudit errors\n')
+                                '{}\t{}\t{}\taudit errors\n'.format(
+                                    award_rfa,
+                                    assay_term_name,
+                                    exp_accession)
+                            )
+
                             err.flush()
 
     finishing_run = 'FINISHED Checkexperiments at {}'.format(datetime.datetime.now())
