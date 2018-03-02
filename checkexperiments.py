@@ -214,14 +214,31 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                     else:
                         if pass_audit:
                             submission_date = max(dates).strftime("%Y-%m-%d")
-                            out.write(
-                                '{}\t{}\t{}\t{}\t-> submitted\t{}\n'.format(
-                                    award_rfa,
-                                    assay_term_name,
-                                    exp_accession,
-                                    ex['status'],
-                                    submission_date)
+                            item_url = urljoin(url, exp_accession)
+                            data = {
+                                "status": "submitted",
+                                "submission_data": submission_date
+                            }
+                            r = session.patch(
+                                item_url,
+                                data=json.dumps(data),
+                                headers={
+                                    'content-type': 'application/json',
+                                    'accept': 'application/json'
+                                },
                             )
+                            if not r.ok:
+                                print ('{} {}\n{}'.format(r.status_code, r.reason, r.text))
+                            else:
+                                out.write(
+                                    '{}\t{}\t{}\t{}\t-> submitted\t{}\n'.format(
+                                        award_rfa,
+                                        assay_term_name,
+                                        exp_accession,
+                                        ex['status'],
+                                        submission_date)
+                                )
+
                             out.flush()
                         else:
                             err.write(
