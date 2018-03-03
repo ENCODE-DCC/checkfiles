@@ -217,7 +217,7 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                             item_url = urljoin(url, exp_accession)
                             data = {
                                 "status": "submitted",
-                                "submission_data": submission_date
+                                "date_submitted": submission_date
                             }
                             r = session.patch(
                                 item_url,
