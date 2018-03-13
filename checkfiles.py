@@ -748,10 +748,18 @@ def check_file(config, session, url, job):
     except FileNotFoundError:
         if job['run'] > job['upload_expiration']:
             errors['file_not_found'] = 'File has not been uploaded yet.'
+        else:
+            errors['file_not_found_unexpired_credentials'] = (
+                'File has not been uploaded yet, but the credentials are not expired, '
+                'so the status was not changed.'
+            )
         job['skip'] = True
         return job
     #  Happens when there is S3 connectivity issue: "OSError: [Errno 107] Transport endpoint is not connected"
     except OSError:
+        errors['file_check_skipped_due_to_s3_connectivity'] = (
+            'File check was skipped due to temporary S3 connectivity issues'
+        )
         job['skip'] = True
         return job
     else:
@@ -926,7 +934,11 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
             # Only check files that will not be changed during the check.
             if job['run'] < job['upload_expiration']:
                 if not include_unexpired_upload:
-                    continue
+                    job['errors']['unexpired_credentials'] = (
+                        'File status have not been changed, the file '
+                        'check was skipped due to file\'s '
+                        'unexpired upload credentials'
+                    )
         else:
             job['errors']['get_upload_url_request'] = \
                 '{} {}\n{}'.format(r.status_code, r.reason, r.text)
@@ -1044,7 +1056,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
     except multiprocessing.NotImplmentedError:
         nprocesses = 1
 
-    version = '1.19'
+    version = '1.20'
 
     try:
         ip_output = subprocess.check_output(
@@ -1104,21 +1116,16 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
         jobs = fetch_files(session, url, search_query, out, include_unexpired_upload, file_list, local_file)
         if not json_out:
             headers = '\t'.join(['Accession', 'Lab', 'Errors', 'Aliases', 'Upload URL',
-                                'Upload Expiration'])
+                                 'Upload Expiration'])
             out.write(headers + '\n')
             out.flush()
         for job in imap(functools.partial(check_file, config, session, url), jobs):
             if not dry_run:
                 patch_file(session, url, job)
-
-            if not job.get('skip'):
-                errors_string = str(job.get('errors', {'errors': None}))
-            else:
-                errors_string = str({'errors': 'status have not been changed, the file check was skipped due to the file unavailability on S3'})
             tab_report = '\t'.join([
                 job['item'].get('accession', 'UNKNOWN'),
                 job['item'].get('lab', 'UNKNOWN'),
-                errors_string,
+                str(job['errors']),
                 str(job['item'].get('aliases', ['n/a'])),
                 job.get('upload_url', ''),
                 job.get('upload_expiration', ''),
