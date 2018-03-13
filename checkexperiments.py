@@ -27,7 +27,7 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
     if dry_run:
         dr = "-- Dry Run"
 
-    version = '0.11'
+    version = '0.12'
 
     try:
         ip_output = subprocess.check_output(
@@ -52,15 +52,18 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
             as_user=True
         )
 
-    # read_depth definitions:
-    min_depth = {}
-    min_depth['ChIP-seq'] = 20000000
-    min_depth['RAMPAGE'] = 10000000
-    min_depth['shRNA knockdown followed by RNA-seq'] = 10000000
-    min_depth['siRNA knockdown followed by RNA-seq'] = 10000000
-    min_depth['single cell isolation followed by RNA-seq'] = 10000000
-    min_depth['CRISPR genome editing followed by RNA-seq'] = 10000000
-    min_depth['modENCODE-chip'] = 500000
+    minimal_read_depth_requirements = {
+        'DNase-seq': 20000000,
+        'genetic modification followed by DNase-seq': 20000000,
+        'ChIP-seq': 20000000,
+        'RAMPAGE': 10000000,
+        'shRNA knockdown followed by RNA-seq': 10000000,
+        'siRNA knockdown followed by RNA-seq': 10000000,
+        'single cell isolation followed by RNA-seq': 10000000,
+        'CRISPR genome editing followed by RNA-seq': 10000000,
+        'modENCODE-chip': 500000
+    }
+
 
     graph = []
     # checkexperiments using a file with a list of experiment accessions to be checked
@@ -92,113 +95,160 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
             return
         else:
             graph = r.json()['@graph']
-    print('number of experiments: ' + str(len(graph)))
+
     for ex in graph:
-        experiment_accession = ex.get('accession')
+        if ex['status'] != 'started':
+            continue
+        assay_term_name = ex.get('assay_term_name')
+        exp_accession = ex.get('accession')
         award_request = session.get(urljoin(
             url,
             ex.get('award') + '?frame=object&format=json'))
         award_obj = award_request.json()
-        replicates = set()
-        replicates_reads = {}
-        dates = []
-        files = []
+        award_rfa = award_obj.get('rfa')
+        if (
+            (assay_term_name not in minimal_read_depth_requirements) or
+            (award_rfa == 'modERN') or 
+            (award_rfa == 'modENCODE' and assay_term_name != 'ChIP-seq')):
+            err.write(
+                '{}\t{}\t{}\texcluded from automatic screening\n'.format(
+                    award_rfa,
+                    assay_term_name,
+                    exp_accession)
+            )                
+            err.flush()
+            continue
+
         try:
-            if ex.get('replicates'):
-                for replicate in ex.get('replicates'):
+            replicates = ex.get('replicates')
+            if replicates:
+                replicates_set = set()
+                submitted_replicates = set()
+                replicates_reads = {}
+                bio_rep_reads = {}
+                replicates_bio_index = {}
+                
+                for replicate in replicates:
                     replicate_request = session.get(urljoin(
                         url,
                         replicate + '?frame=object&format=json'))
                     replicate_obj = replicate_request.json()
                     if replicate_obj.get('status') not in ['deleted']:
-                        replicates.add(replicate_obj['@id'])
-                        replicates_reads[replicate_obj['@id']] = 0
-                if  ex.get('files'):
-                    for file_acc in ex.get('files'):
+                        replicate_id = replicate_obj.get('@id')
+                        replicates_set.add(replicate_id)
+                        replicates_reads[replicate_id] = 0
+                        replicates_bio_index[replicate_id] = replicate_obj.get('biological_replicate_number')
+                        bio_rep_reads[replicates_bio_index[replicate_id]] = 0
+                exp_files = ex.get('files')
+                if  exp_files:
+                    erroneous_status = ['uploading', 'content error', 'upload failed']
+                    dates = []
+                    for file_acc in exp_files:
                         file_request = session.get(urljoin(
                             url,
                             file_acc + '?frame=object&format=json'))
                         file_obj = file_request.json()
                         if file_obj.get('file_format') == 'fastq' and \
-                           file_obj.get('status') not in ['uploading',
-                                                          'content error',
-                                                          'upload failed',
-                                                         ]:
-                            file_date = datetime.datetime.strptime(
-                                file_obj['date_created'][:10], "%Y-%m-%d")
-                            dates.append(file_date)
-                            files.append(file_obj)
-                            if file_obj.get('read_count') and file_obj.get('replicate'):
-                                if not replicates_reads.get(file_obj.get('replicate')) is None:
-                                    replicates_reads[file_obj.get('replicate')] += \
-                                        file_obj.get('read_count')
+                           file_obj.get('status') not in erroneous_status:
+                            replicate_id  = file_obj.get('replicate')
+                            read_count = file_obj.get('read_count')
+                            if read_count and replicate_id:
+                                submitted_replicates.add(replicate_id)
+                                if replicate_id in replicates_reads:
+                                    run_type = file_obj.get('run_type')
+                                    if run_type and run_type == 'paired-ended':
+                                        read_count == read_count/2
+                                    replicates_reads[replicate_id] += read_count
+                                    bio_rep_reads[replicates_bio_index[replicate_id]] += read_count
+
+                                    file_date = datetime.datetime.strptime(
+                                        file_obj['date_created'][:10], "%Y-%m-%d")
+                                    dates.append(file_date)
+                else:
+                    continue
+            else:
+                continue
         except requests.exceptions.RequestException as e:
             print (e)
             continue
         else:
-            
-            submitted_replicates = set()
-            for file_obj in files:
-                if file_obj.get('replicate'):
-                    submitted_replicates.add(file_obj.get('replicate'))
-            if replicates and not replicates - submitted_replicates:
-                if award_obj.get('rfa') == 'modERN':
-                    err.write(
-                        award_obj.get('rfa') + '\t' +
-                        experiment_accession + '\texcluded from automatic screening\n')
-                    err.flush()
-                else:
-                    # check read depth:
-                    depth_flag = False
-                    if award_obj.get('rfa') == 'modENCODE':
-                        for rep in replicates_reads:
-                            if replicates_reads[rep] < min_depth['modENCODE-chip']:
-                                depth_flag = True
-                                err.write(
-                                    award_obj.get('rfa') + '\t' + \
-                                    experiment_accession + '\t' + rep + \
-                                    '\treads_count=' + str(replicates_reads[rep]) + \
-                                    '\texpected count=' + \
-                                    str(min_depth['modENCODE-chip']) + '\n')
-                                err.flush()
-                                break
-                    else:
-                        if ex['assay_term_name'] in min_depth:
-                            for rep in replicates_reads:
-                                if replicates_reads[rep] < min_depth[ex['assay_term_name']]:
-                                    depth_flag = True
-                                    err.write(
-                                        award_obj.get('rfa') + '\t' + \
-                                        experiment_accession + '\t' + rep + \
-                                        '\treads_count=' + \
-                                        str(replicates_reads[rep]) + '\texpected count=' + \
-                                        str(min_depth[ex['assay_term_name']]) + '\n')
-                                    err.flush()
-                                    break
-                    if not depth_flag:
-                        pass_audit = True
-                        try:
-                            audit_request = session.get(urljoin(
-                                url,
-                                '/' + experiment_accession + '?frame=page&format=json'))
-                            audit_obj = audit_request.json().get('audit')
-                            if audit_obj.get("ERROR"):
-                                pass_audit = False
-                        except requests.exceptions.RequestException:
-                            continue
-                        else:
-                            if pass_audit:
-                                out.write(
-                                    award_obj.get('rfa') + '\t' + \
-                                    experiment_accession + '\t' + ex['status'] + \
-                                    '\t-> submitted\t' + max(dates).strftime("%Y-%m-%d") + '\n')
-                                out.flush()
-                            else:
-                                err.write(
-                                    award_obj.get('rfa') + '\t' +
-                                    experiment_accession + '\taudit errors\n')
-                                err.flush()
+            submitted_flag = True
+            if replicates_set and not replicates_set - submitted_replicates:
+                key = assay_term_name
+                if award_rfa == 'modENCODE':
+                    key = 'modENCODE-chip'
+                    if assay_term_name in [
+                        'DNase-seq',
+                        'genetic modification followed by DNase-seq',
+                        'ChIP-seq']:
+                        replicates_reads = bio_rep_reads
+                
+                for rep in replicates_reads:
+                    if replicates_reads[rep] < minimal_read_depth_requirements[key]:
+                        # low read depth in replicate + details
+                        submitted_flag = False
+                        err.write(
+                            '{}\t{}\t{}\t{}\treads_count={}\texpected count={}\n'.format(
+                                award_rfa,
+                                assay_term_name,
+                                exp_accession,
+                                rep,
+                                replicates_reads[rep],
+                                minimal_read_depth_requirements[key])
+                        )
+                        err.flush()
+                        break
 
+                if submitted_flag:
+                    pass_audit = True
+                    try:
+                        audit_request = session.get(urljoin(
+                            url,
+                            '/' + exp_accession + '?frame=page&format=json'))
+                        audit_obj = audit_request.json().get('audit')
+                        if audit_obj.get("ERROR"):
+                            pass_audit = False
+                    except requests.exceptions.RequestException as e:
+                        print (e)
+                        continue
+                    else:
+                        if pass_audit:
+                            submission_date = max(dates).strftime("%Y-%m-%d")
+                            item_url = urljoin(url, exp_accession)
+                            data = {
+                                "status": "submitted",
+                                "date_submitted": submission_date
+                            }
+                            r = session.patch(
+                                item_url,
+                                data=json.dumps(data),
+                                headers={
+                                    'content-type': 'application/json',
+                                    'accept': 'application/json'
+                                },
+                            )
+                            if not r.ok:
+                                print ('{} {}\n{}'.format(r.status_code, r.reason, r.text))
+                            else:
+                                out.write(
+                                    '{}\t{}\t{}\t{}\t-> submitted\t{}\n'.format(
+                                        award_rfa,
+                                        assay_term_name,
+                                        exp_accession,
+                                        ex['status'],
+                                        submission_date)
+                                )
+
+                            out.flush()
+                        else:
+                            err.write(
+                                '{}\t{}\t{}\taudit errors\n'.format(
+                                    award_rfa,
+                                    assay_term_name,
+                                    exp_accession)
+                            )
+
+                            err.flush()
 
     finishing_run = 'FINISHED Checkexperiments at {}'.format(datetime.datetime.now())
     out.write(finishing_run + '\n')
