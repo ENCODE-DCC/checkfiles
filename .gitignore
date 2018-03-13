@@ -111,3 +111,7 @@ pyvenv.cfg
 checkfiles/.DS_Store
 
 .DS_Store
+
+# Created while using checkfiles
+lib64
+share/
