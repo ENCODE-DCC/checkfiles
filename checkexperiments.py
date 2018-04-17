@@ -52,6 +52,8 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
             as_user=True
         )
 
+    # we don't have at the moment minimal requirements for ChIA and HiC
+    # that being the reason for specifying at least one read in each replicate
     minimal_read_depth_requirements = {
         'DNase-seq': 20000000,
         'genetic modification followed by DNase-seq': 20000000,
@@ -61,7 +63,9 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
         'siRNA knockdown followed by RNA-seq': 10000000,
         'single cell isolation followed by RNA-seq': 10000000,
         'CRISPR genome editing followed by RNA-seq': 10000000,
-        'modENCODE-chip': 500000
+        'modENCODE-chip': 500000,
+        'ChIA-PET': 1,
+        'HiC': 1
     }
 
 
@@ -106,9 +110,12 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
             ex.get('award') + '?frame=object&format=json'))
         award_obj = award_request.json()
         award_rfa = award_obj.get('rfa')
+        award_name = award_obj.get('name')
+        # excluding all modERN, ENCORE experiments
+        # and non ChIP modENCODE experiments from screening
         if (
             (assay_term_name not in minimal_read_depth_requirements) or
-            (award_rfa == 'modERN') or 
+            (award_rfa == 'modERN') or (award_name == 'U41HG009889') or
             (award_rfa == 'modENCODE' and assay_term_name != 'ChIP-seq')):
             err.write(
                 '{}\t{}\t{}\texcluded from automatic screening\n'.format(
