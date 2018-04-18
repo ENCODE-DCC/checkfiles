@@ -97,7 +97,7 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
             graph = r.json()['@graph']
 
     for ex in graph:
-        if ex['status'] != 'started':
+        if ex['status'] != 'in progress':
             continue
         assay_term_name = ex.get('assay_term_name')
         exp_accession = ex.get('accession')
@@ -302,7 +302,7 @@ def main():
     parser.add_argument(
         '--dry-run', action='store_true', help="Don't update status, just check")
     parser.add_argument(
-        '--search-query', default='status=started',
+        '--search-query', default='status=in progress',
         help="override the experiment search query, e.g. 'accession=ENCSR000ABC'")
     parser.add_argument(
         '--accessions-list', default='',
