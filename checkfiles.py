@@ -277,6 +277,19 @@ def process_new_illumina_prefix(read_name,
     return old_illumina_current_prefix
 
 
+def process_pacbio_read_name_pattern(
+        read_name,
+        signatures_set,
+        movie_identifier
+        ):
+    arr = re.split(r'/', read_name)
+    if len(arr) > 1:
+        movie_identifier = arr[0]
+        signatures_set.add(
+            'pacbio:0:1::' + movie_identifier)
+    return movie_identifier
+
+
 def process_old_illumina_read_name_pattern(read_name,
                                            read_numbers_set,
                                            signatures_set,
@@ -318,6 +331,7 @@ def process_read_name_line(read_name_line,
                            read_name_pattern,
                            special_read_name_pattern,
                            srr_read_name_pattern,
+                           pacbio_read_name_pattern,
                            old_illumina_current_prefix,
                            read_numbers_set,
                            signatures_no_barcode_set,
@@ -355,6 +369,23 @@ def process_read_name_line(read_name_line,
                                                                  signatures_set,
                                                                  read_lengths_dictionary,
                                                                  errors, True)
+        elif pacbio_read_name_pattern.match(read_name):
+            # pacbio reads include: 
+            # movie identifier that includes the time of run start (m140415_143853)
+            # instrment serial number (42175)
+            # SMRT cell barcode (c100635972550000001823121909121417)
+            # set number
+            # part number
+            # m140415_143853_42175_c100635972550000001823121909121417_s1_p0/....
+            movie_identifier = read_name.split('/')[0]
+            if len(movie_identifier) > 0:
+                process_pacbio_read_name_pattern(
+                    read_name,
+                    signatures_set,
+                    movie_identifier
+                )
+            else:
+                errors['fastq_format_readname'] = read_name   
         else:
             # unrecognized read_name_format
             # current convention is to include WHOLE
@@ -425,6 +456,19 @@ def process_fastq_file(job, fastq_data_stream, session, url):
         '^(@SRR[\d.]+)$'
     )
 
+    pacbio_read_name_pattern = re.compile(
+        '(^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@c\d+)$'
+    )
+    #>   @m171202_002134_42198_c101417902550000001823303602281840_s1_p0/163473/ccs
+    #>   @c25802/f1p6/796 isoform=c25802;full_length_coverage=1;non_full_length_coverage=6;isoform_length=796  
+    >>>>>>> finish the regex for isoform pacbio files
+    >>>>>>> continue to use of the File.json new property https://github.com/ENCODE-DCC/encoded/compare/ENCD-4019-signature
+    >>>>>>> 'readname_details': { 
+                'flowcell_id_location': 2,
+               'barcode_location': 5
+            }
+
+
     read_numbers_set = set()
     signatures_set = set()
     signatures_no_barcode_set = set()
@@ -441,6 +485,9 @@ def process_fastq_file(job, fastq_data_stream, session, url):
             else:
                 line_index += 1
                 if line_index == 1:
+                    
+                    # may be from here deliver a flag about the presence/absence of the readnamedetails
+
                     old_illumina_current_prefix = \
                         process_read_name_line(
                             line,
@@ -448,6 +495,7 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                             read_name_pattern,
                             special_read_name_pattern,
                             srr_read_name_pattern,
+                            pacbio_read_name_pattern,
                             old_illumina_current_prefix,
                             read_numbers_set,
                             signatures_no_barcode_set,
@@ -1056,7 +1104,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
     except multiprocessing.NotImplmentedError:
         nprocesses = 1
 
-    version = '1.20'
+    version = '1.21'
 
     try:
         ip_output = subprocess.check_output(
