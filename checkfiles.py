@@ -387,7 +387,7 @@ def process_read_name_line(read_name_line,
                                                                     signatures_no_barcode_set,
                                                                     signatures_set,
                                                                     read_lengths_dictionary,
-                                                                    errors, True)
+                                                                    errors, True, read_name_details)
             elif pacbio_read_name_pattern.match(read_name):
                 # pacbio reads include: 
                 # movie identifier that includes the time of run start (m140415_143853)
@@ -513,7 +513,8 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                             signatures_no_barcode_set,
                             signatures_set,
                             read_lengths_dictionary,
-                            errors, False)
+                            errors, False,
+                            read_name_details)
             if line_index == 2:
                 read_count += 1
                 process_sequence_line(line, read_lengths_dictionary)
