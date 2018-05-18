@@ -642,6 +642,20 @@ def compare_flowcell_details(flowcell_details_1, flowcell_details_2):
     return False
 
 
+def get_read_name_details(job_id, errors, session, url):
+    query = job_id +'?datastore=database&frame=object&format=json'
+    try:
+        r = session.get(urljoin(url, query))
+    except requests.exceptions.RequestException as e:
+        errors['lookup_for_read_name_detaisl'] = ('Network error occured, while looking for '
+                                                  'file read_name details on the portal. {}').format(str(e))
+    else:
+        details = r.json().get('readname_details')
+        if details:
+            return details
+    return False
+
+  
 def get_platform_uuid(job_id, errors, session, url):
     query = job_id +'?datastore=database&frame=object&format=json'
     try:
