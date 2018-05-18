@@ -337,91 +337,110 @@ def process_read_name_line(read_name_line,
                            signatures_no_barcode_set,
                            signatures_set,
                            read_lengths_dictionary,
-                           errors, srr_flag):
+                           errors, srr_flag, read_name_details):
     read_name = read_name_line.strip()
-    words_array = re.split(r'\s', read_name)
-    if read_name_pattern.match(read_name) is None:
-        if special_read_name_pattern.match(read_name) is not None:
-            process_special_read_name_pattern(read_name,
-                                              words_array,
-                                              signatures_set,
-                                              signatures_no_barcode_set,
-                                              read_numbers_set,
-                                              srr_flag)
-        elif srr_read_name_pattern.match(read_name.split(' ')[0]) is not None:
-            # in case the readname is following SRR format, read number will be
-            # defined using SRR format specifications, and not by the illumina portion of the read name
-            # srr_flag is used to distinguish between srr and "regular" readname formats
-            srr_portion = read_name.split(' ')[0]
-            if srr_portion.count('.') == 2:
-                read_numbers_set.add(srr_portion[-1])
-            else:
-                read_numbers_set.add('1')
-            illumina_portion = read_name.split(' ')[1]
-            old_illumina_current_prefix = process_read_name_line('@'+illumina_portion,
-                                                                 read_name_prefix,
-                                                                 read_name_pattern,
-                                                                 special_read_name_pattern,
-                                                                 srr_read_name_pattern,
-                                                                 old_illumina_current_prefix,
-                                                                 read_numbers_set,
-                                                                 signatures_no_barcode_set,
-                                                                 signatures_set,
-                                                                 read_lengths_dictionary,
-                                                                 errors, True)
-        elif pacbio_read_name_pattern.match(read_name):
-            # pacbio reads include: 
-            # movie identifier that includes the time of run start (m140415_143853)
-            # instrment serial number (42175)
-            # SMRT cell barcode (c100635972550000001823121909121417)
-            # set number
-            # part number
-            # m140415_143853_42175_c100635972550000001823121909121417_s1_p0/....
-            movie_identifier = read_name.split('/')[0]
-            if len(movie_identifier) > 0:
-                process_pacbio_read_name_pattern(
-                    read_name,
-                    signatures_set,
-                    movie_identifier
-                )
-            else:
-                errors['fastq_format_readname'] = read_name   
-        else:
-            # unrecognized read_name_format
-            # current convention is to include WHOLE
-            # readname at the end of the signature
-            if len(words_array) == 1:
-                if read_name_prefix.match(read_name) is not None:
-                    # new illumina without second part
-                    old_illumina_current_prefix = process_new_illumina_prefix(
-                        read_name,
-                        signatures_set,
-                        old_illumina_current_prefix,
-                        read_numbers_set,
-                        srr_flag)
+    if read_name_details:
+        #extract fastq signature parts using read_name_detail
+        read_name_array = re.split(r'[:\s]', read_name)
 
-                elif len(read_name) > 3 and read_name.count(':') > 2:
-                    # assuming old illumina format
-                    old_illumina_current_prefix = process_old_illumina_read_name_pattern(
+        flowcell = read_name_array[read_name_details['flowcell_id_location']]
+        lane_number = read_name_array[read_name_details['lane_id_location']]
+        if not read_name_details.get('read_number_location'):
+            read_number = 1
+        else:
+            read_number = read_name_array[read_name_details['read_number_location']]
+        read_numbers_set.add(read_number)
+        barcode_index = read_name_array[read_name_details['barcode_location']]
+        signatures_set.add(
+            flowcell + ':' + lane_number + ':' +
+            read_number + ':' + barcode_index + ':')
+        signatures_no_barcode_set.add(
+            flowcell + ':' + lane_number + ':' +
+            read_number + ':')
+    else:
+        words_array = re.split(r'\s', read_name)
+        if read_name_pattern.match(read_name) is None:
+            if special_read_name_pattern.match(read_name) is not None:
+                process_special_read_name_pattern(read_name,
+                                                words_array,
+                                                signatures_set,
+                                                signatures_no_barcode_set,
+                                                read_numbers_set,
+                                                srr_flag)
+            elif srr_read_name_pattern.match(read_name.split(' ')[0]) is not None:
+                # in case the readname is following SRR format, read number will be
+                # defined using SRR format specifications, and not by the illumina portion of the read name
+                # srr_flag is used to distinguish between srr and "regular" readname formats
+                srr_portion = read_name.split(' ')[0]
+                if srr_portion.count('.') == 2:
+                    read_numbers_set.add(srr_portion[-1])
+                else:
+                    read_numbers_set.add('1')
+                illumina_portion = read_name.split(' ')[1]
+                old_illumina_current_prefix = process_read_name_line('@'+illumina_portion,
+                                                                    read_name_prefix,
+                                                                    read_name_pattern,
+                                                                    special_read_name_pattern,
+                                                                    srr_read_name_pattern,
+                                                                    old_illumina_current_prefix,
+                                                                    read_numbers_set,
+                                                                    signatures_no_barcode_set,
+                                                                    signatures_set,
+                                                                    read_lengths_dictionary,
+                                                                    errors, True)
+            elif pacbio_read_name_pattern.match(read_name):
+                # pacbio reads include: 
+                # movie identifier that includes the time of run start (m140415_143853)
+                # instrment serial number (42175)
+                # SMRT cell barcode (c100635972550000001823121909121417)
+                # set number
+                # part number
+                # m140415_143853_42175_c100635972550000001823121909121417_s1_p0/....
+                movie_identifier = read_name.split('/')[0]
+                if len(movie_identifier) > 0:
+                    process_pacbio_read_name_pattern(
                         read_name,
-                        read_numbers_set,
                         signatures_set,
-                        old_illumina_current_prefix,
-                        srr_flag)
+                        movie_identifier
+                    )
+                else:
+                    errors['fastq_format_readname'] = read_name   
+            else:
+                # unrecognized read_name_format
+                # current convention is to include WHOLE
+                # readname at the end of the signature
+                if len(words_array) == 1:
+                    if read_name_prefix.match(read_name) is not None:
+                        # new illumina without second part
+                        old_illumina_current_prefix = process_new_illumina_prefix(
+                            read_name,
+                            signatures_set,
+                            old_illumina_current_prefix,
+                            read_numbers_set,
+                            srr_flag)
+
+                    elif len(read_name) > 3 and read_name.count(':') > 2:
+                        # assuming old illumina format
+                        old_illumina_current_prefix = process_old_illumina_read_name_pattern(
+                            read_name,
+                            read_numbers_set,
+                            signatures_set,
+                            old_illumina_current_prefix,
+                            srr_flag)
+                    else:
+                        errors['fastq_format_readname'] = read_name
+                        # the only case to skip update content error - due to the changing
+                        # nature of read names
                 else:
                     errors['fastq_format_readname'] = read_name
-                    # the only case to skip update content error - due to the changing
-                    # nature of read names
-            else:
-                errors['fastq_format_readname'] = read_name
-    # found a match to the regex of "almost" illumina read_name
-    else:
-        process_illumina_read_name_pattern(
-            read_name,
-            read_numbers_set,
-            signatures_set,
-            signatures_no_barcode_set,
-            srr_flag)
+        # found a match to the regex of "almost" illumina read_name
+        else:
+            process_illumina_read_name_pattern(
+                read_name,
+                read_numbers_set,
+                signatures_set,
+                signatures_no_barcode_set,
+                srr_flag)
 
     return old_illumina_current_prefix
 
@@ -457,17 +476,10 @@ def process_fastq_file(job, fastq_data_stream, session, url):
     )
 
     pacbio_read_name_pattern = re.compile(
-        '(^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@c\d+)$'
+        '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@c.+)$'
     )
-    #>   @m171202_002134_42198_c101417902550000001823303602281840_s1_p0/163473/ccs
-    #>   @c25802/f1p6/796 isoform=c25802;full_length_coverage=1;non_full_length_coverage=6;isoform_length=796  
-    >>>>>>> finish the regex for isoform pacbio files
-    >>>>>>> continue to use of the File.json new property https://github.com/ENCODE-DCC/encoded/compare/ENCD-4019-signature
-    >>>>>>> 'readname_details': { 
-                'flowcell_id_location': 2,
-               'barcode_location': 5
-            }
 
+    read_name_details = get_read_name_details(job.get('@id'), errors, session, url)
 
     read_numbers_set = set()
     signatures_set = set()
@@ -655,7 +667,7 @@ def get_read_name_details(job_id, errors, session, url):
             return details
     return False
 
-  
+
 def get_platform_uuid(job_id, errors, session, url):
     query = job_id +'?datastore=database&frame=object&format=json'
     try:
