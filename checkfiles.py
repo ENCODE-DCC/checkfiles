@@ -350,7 +350,12 @@ def process_read_name_line(read_name_line,
         else:
             read_number = read_name_array[read_name_details['read_number_location']]
         read_numbers_set.add(read_number)
-        barcode_index = read_name_array[read_name_details['barcode_location']]
+        
+        if not read_name_details.get('barcode_location'):
+            barcode_index = ''
+        else:
+            barcode_index = read_name_array[read_name_details['barcode_location']]
+        
         signatures_set.add(
             flowcell + ':' + lane_number + ':' +
             read_number + ':' + barcode_index + ':')
