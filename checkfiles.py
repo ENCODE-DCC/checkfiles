@@ -668,7 +668,7 @@ def get_read_name_details(job_id, errors, session, url):
         errors['lookup_for_read_name_detaisl'] = ('Network error occured, while looking for '
                                                   'file read_name details on the portal. {}').format(str(e))
     else:
-        details = r.json().get('readname_details')
+        details = r.json().get('read_name_details')
         if details:
             return details
     return False
