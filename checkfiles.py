@@ -671,7 +671,6 @@ def get_read_name_details(job_id, errors, session, url):
         details = r.json().get('read_name_details')
         if details:
             return details
-    return False
 
 
 def get_platform_uuid(job_id, errors, session, url):
