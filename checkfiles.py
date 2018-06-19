@@ -38,6 +38,27 @@ GZIP_TYPES = [
     "wig"
 ]
 
+read_name_prefix = re.compile(
+    '^(@[a-zA-Z\d]+[a-zA-Z\d_-]*:[a-zA-Z\d-]+:[a-zA-Z\d_-]' +
+    '+:\d+:\d+:\d+:\d+)$')
+
+read_name_pattern = re.compile(
+    '^(@[a-zA-Z\d]+[a-zA-Z\d_-]*:[a-zA-Z\d-]+:[a-zA-Z\d_-]' +
+    '+:\d+:\d+:\d+:\d+[\s_][12]:[YXN]:[0-9]+:([ACNTG\+]*|[0-9]*))$'
+)
+
+special_read_name_pattern = re.compile(
+    '^(@[a-zA-Z\d]+[a-zA-Z\d_-]*:[a-zA-Z\d-]+:[a-zA-Z\d_-]' +
+    '+:\d+:\d+:\d+:\d+[/1|/2]*[\s_][12]:[YXN]:[0-9]+:([ACNTG\+]*|[0-9]*))$'
+)
+
+srr_read_name_pattern = re.compile(
+    '^(@SRR[\d.]+)$'
+)
+
+pacbio_read_name_pattern = re.compile(
+    '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@c.+)$'
+)
 
 def is_path_gzipped(path):
     with open(path, 'rb') as f:
@@ -327,11 +348,6 @@ def process_old_illumina_read_name_pattern(read_name,
 
 
 def process_read_name_line(read_name_line,
-                           read_name_prefix,
-                           read_name_pattern,
-                           special_read_name_pattern,
-                           srr_read_name_pattern,
-                           pacbio_read_name_pattern,
                            old_illumina_current_prefix,
                            read_numbers_set,
                            signatures_no_barcode_set,
@@ -383,10 +399,6 @@ def process_read_name_line(read_name_line,
                     read_numbers_set.add('1')
                 illumina_portion = read_name.split(' ')[1]
                 old_illumina_current_prefix = process_read_name_line('@'+illumina_portion,
-                                                                    read_name_prefix,
-                                                                    read_name_pattern,
-                                                                    special_read_name_pattern,
-                                                                    srr_read_name_pattern,
                                                                     old_illumina_current_prefix,
                                                                     read_numbers_set,
                                                                     signatures_no_barcode_set,
@@ -462,28 +474,6 @@ def process_fastq_file(job, fastq_data_stream, session, url):
     errors = job['errors']
     result = job['result']
 
-    read_name_prefix = re.compile(
-        '^(@[a-zA-Z\d]+[a-zA-Z\d_-]*:[a-zA-Z\d-]+:[a-zA-Z\d_-]' +
-        '+:\d+:\d+:\d+:\d+)$')
-
-    read_name_pattern = re.compile(
-        '^(@[a-zA-Z\d]+[a-zA-Z\d_-]*:[a-zA-Z\d-]+:[a-zA-Z\d_-]' +
-        '+:\d+:\d+:\d+:\d+[\s_][12]:[YXN]:[0-9]+:([ACNTG\+]*|[0-9]*))$'
-    )
-
-    special_read_name_pattern = re.compile(
-        '^(@[a-zA-Z\d]+[a-zA-Z\d_-]*:[a-zA-Z\d-]+:[a-zA-Z\d_-]' +
-        '+:\d+:\d+:\d+:\d+[/1|/2]*[\s_][12]:[YXN]:[0-9]+:([ACNTG\+]*|[0-9]*))$'
-    )
-
-    srr_read_name_pattern = re.compile(
-        '^(@SRR[\d.]+)$'
-    )
-
-    pacbio_read_name_pattern = re.compile(
-        '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@c.+)$'
-    )
-
     read_name_details = get_read_name_details(job.get('@id'), errors, session, url)
 
     read_numbers_set = set()
@@ -508,11 +498,6 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                     old_illumina_current_prefix = \
                         process_read_name_line(
                             line,
-                            read_name_prefix,
-                            read_name_pattern,
-                            special_read_name_pattern,
-                            srr_read_name_pattern,
-                            pacbio_read_name_pattern,
                             old_illumina_current_prefix,
                             read_numbers_set,
                             signatures_no_barcode_set,
