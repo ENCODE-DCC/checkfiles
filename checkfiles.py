@@ -1040,10 +1040,11 @@ def patch_file(session, url, job):
                                  'Fastq file contains read names that don’t follow ' +
                                  'the Illumina standard naming schema; for example {}'.format(
                                      errors['fastq_format_readname']))
+        # content_error_detail is truncated to allow indexing in cases of very long error messages
         if 'content_error' in errors:
             data = {
                 'status': 'content error',
-                'content_error_detail': errors['content_error'].strip()
+                'content_error_detail': errors['content_error'][:5000].strip()
                 }
         if 'file_not_found' in errors:
             data = {
