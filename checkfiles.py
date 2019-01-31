@@ -362,7 +362,7 @@ def process_read_name_line(read_name_line,
         flowcell = read_name_array[read_name_details['flowcell_id_location']]
         lane_number = read_name_array[read_name_details['lane_id_location']]
         if not read_name_details.get('read_number_location'):
-            read_number = 1
+            read_number = "1"
         else:
             read_number = read_name_array[read_name_details['read_number_location']]
         read_numbers_set.add(read_number)
