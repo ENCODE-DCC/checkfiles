@@ -99,8 +99,12 @@ def check_format(encValData, job, path):
             update_content_error(errors, 'File metadata lacks genome annotation information')
         if errors:
             return errors
-        chromInfo = '-chromInfo=%s/%s/%s/chrom.sizes' % (
-            encValData, assembly, item['genome_annotation'])
+        if item.get('output_type') == 'transcriptome alignments':
+            chromInfo = '-chromInfo=%s/%s/%s/chrom.sizes' % (
+                encValData, assembly, item['genome_annotation'])
+        else:
+            chromInfo = '-chromInfo=%s/%s/%s/gene.sizes' % (
+                encValData, assembly, item['genome_annotation'])
     else:
         chromInfo = '-chromInfo=%s/%s/chrom.sizes' % (encValData, assembly)
 
