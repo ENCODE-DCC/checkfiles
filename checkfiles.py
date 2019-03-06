@@ -88,7 +88,9 @@ def check_format(encValData, job, path):
     # if assembly is in the map, use the mapping, otherwise just use the string in assembly
     assembly = ASSEMBLY_MAP.get(item.get('assembly'), item.get('assembly'))
 
-    if item['file_format'] == 'bam' and item.get('output_type') == 'transcriptome alignments':
+    if (item['file_format'] == 'bam' and 
+        (item.get('output_type') == 'transcriptome alignments' or
+         item.get('output_type') == 'gene alignments')):
         if 'assembly' not in item:
             errors['assembly'] = 'missing assembly'
             update_content_error(errors, 'File metadata lacks assembly information')
