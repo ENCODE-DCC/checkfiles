@@ -87,10 +87,9 @@ def check_format(encValData, job, path):
 
     # if assembly is in the map, use the mapping, otherwise just use the string in assembly
     assembly = ASSEMBLY_MAP.get(item.get('assembly'), item.get('assembly'))
-
-    if (item['file_format'] == 'bam' and 
-        (item.get('output_type') == 'transcriptome alignments' or
-         item.get('output_type') == 'gene alignments')):
+    file_output_type = item.get('output_type')
+    if (item.get('file_format') == 'bam' and 
+        file_output_type in ['transcriptome alignments', 'gene alignments']):
         if 'assembly' not in item:
             errors['assembly'] = 'missing assembly'
             update_content_error(errors, 'File metadata lacks assembly information')
@@ -99,14 +98,14 @@ def check_format(encValData, job, path):
             update_content_error(errors, 'File metadata lacks genome annotation information')
         if errors:
             return errors
-        if item.get('output_type') == 'transcriptome alignments':
-            chromInfo = '-chromInfo=%s/%s/%s/chrom.sizes' % (
+        if file_output_type == 'transcriptome alignments':
+            chromInfo = '-chromInfo={}/{}/{}/chrom.sizes'.format(
                 encValData, assembly, item['genome_annotation'])
         else:
-            chromInfo = '-chromInfo=%s/%s/%s/gene.sizes' % (
+            chromInfo = '-chromInfo={}/{}/{}/gene.sizes'.format(
                 encValData, assembly, item['genome_annotation'])
     else:
-        chromInfo = '-chromInfo=%s/%s/chrom.sizes' % (encValData, assembly)
+        chromInfo = '-chromInfo={}/{}/chrom.sizes'.format(encValData, assembly)
 
     validate_map = {
         ('fasta', None): ['-type=fasta'],
