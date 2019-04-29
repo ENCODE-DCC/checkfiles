@@ -57,7 +57,7 @@ srr_read_name_pattern = re.compile(
 )
 
 pacbio_read_name_pattern = re.compile(
-    '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@c.+)$'
+    '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@m\d+_\d{6}_\d{6}\/.*)$|^(@c.+)$'
 )
 
 def is_path_gzipped(path):
@@ -1126,7 +1126,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
     except multiprocessing.NotImplmentedError:
         nprocesses = 1
 
-    version = '1.22'
+    version = '1.23'
 
     try:
         ip_output = subprocess.check_output(
