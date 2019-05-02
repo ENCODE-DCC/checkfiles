@@ -57,7 +57,7 @@ srr_read_name_pattern = re.compile(
 )
 
 pacbio_read_name_pattern = re.compile(
-    '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@c.+)$'
+    '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@m\d+_\d{6}_\d{6}\/.*)$|^(@c.+)$'
 )
 
 def is_path_gzipped(path):
@@ -418,6 +418,10 @@ def process_read_name_line(read_name_line,
                 # set number
                 # part number
                 # m140415_143853_42175_c100635972550000001823121909121417_s1_p0/....
+                # alternatively the names would include:
+                # instrment serial number (42175)
+                # time of run start (140415_143853)
+                # m42175_140415_143853/
                 movie_identifier = read_name.split('/')[0]
                 if len(movie_identifier) > 0:
                     process_pacbio_read_name_pattern(
@@ -1126,7 +1130,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
     except multiprocessing.NotImplmentedError:
         nprocesses = 1
 
-    version = '1.22'
+    version = '1.23'
 
     try:
         ip_output = subprocess.check_output(
