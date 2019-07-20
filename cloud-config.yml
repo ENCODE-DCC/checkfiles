@@ -43,7 +43,7 @@ runcmd:
 
 - mkdir /opt/encValData
 - chown build:build /opt/encValData
-- sudo -u build git clone -b CHK-37-add-chrom-size-v29-vM21-ucsc --depth 1 https://github.com/ENCODE-DCC/encValData /opt/encValData
+- sudo -u build git clone -b CHK-39-add-chrom-size-gene-size-vM21 --depth 1 https://github.com/ENCODE-DCC/encValData /opt/encValData
 
 - curl -sS -L -o /usr/local/bin/validateFiles http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/validateFiles
 - chmod +x /usr/local/bin/validateFiles
