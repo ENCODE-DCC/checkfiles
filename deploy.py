@@ -123,7 +123,7 @@ def run(image_id, instance_type,
         {'Key': 'commit', 'Value': commit},
         {'Key': 'started_by', 'Value': username},
     ])
-    print('ssh %s.%s.encodedcc.org' % (name, domain))
+    print('ssh ubuntu@%s.%s.encodedcc.org' % (name, domain))
     print('pending...')
     instance.wait_until_running()
     print(instance.state['Name'])
