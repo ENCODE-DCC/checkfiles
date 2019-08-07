@@ -9,16 +9,15 @@ Example.
 import datetime
 import json
 import sys
-import copy
-import os.path
 import subprocess
+from collections import defaultdict
 from urllib.parse import urljoin
 import requests
 from slackclient import SlackClient
 
 EPILOG = __doc__
 
-def run(out, err, url, username, password, accessions_list=None, bot_token=None, dry_run=False):
+def run(out, url, username, password, bot_token=None, dry_run=False):
     session = requests.Session()
     session.auth = (username, password)
     session.headers['Accept'] = 'application/json'
@@ -31,18 +30,22 @@ def run(out, err, url, username, password, accessions_list=None, bot_token=None,
 
     try:
         ip_output = subprocess.check_output(
-            ['hostname'], stderr=subprocess.STDOUT).strip()
+            ['hostname'], stderr=subprocess.STDOUT
+        ).strip()
         ip = ip_output.decode(errors='replace').rstrip('\n')
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         ip = ''
 
-    initiating_run = ('STARTING matching md5sum files detection, version {} ({}) ({}): {} on {} at {}').format(
-            version,
-            url,
-            dr,
-            ip,
-            datetime.datetime.now())
-    
+    initiating_run = (
+        'STARTING matching md5sum files detection, version {} ({}) ({}): {} at {}'
+    ).format(
+        version,
+        url,
+        dr,
+        ip,
+        datetime.datetime.now()
+    )
+
     out.write(initiating_run + '\nFile uuid\tmd5sum\tMatching md5sum files\n')
     out.flush()
     if bot_token:
@@ -51,14 +54,16 @@ def run(out, err, url, username, password, accessions_list=None, bot_token=None,
             "chat.postMessage",
             channel="#bot-reporting",
             text=initiating_run,
-            as_user=True
+            as_user=True,
         )
 
     graph = []
     r = session.get(
         urljoin(
             url,
-            '/report/?type=File&field=uuid&field=status&field=md5sum&limit=all&'))
+            '/report/?type=File&field=uuid&field=status&field=md5sum&limit=all&'
+        )
+    )
     try:
         r.raise_for_status()
     except requests.HTTPError:
@@ -67,83 +72,98 @@ def run(out, err, url, username, password, accessions_list=None, bot_token=None,
         graph = r.json()['@graph']
 
     excluded_statuses = ['uploading', 'upload failed', 'content error']
-    md5dictionary = {}
+    md5dictionary = defaultdict(set)
     for f in graph:
         if f.get('status') not in excluded_statuses:
             md5 = f.get('md5sum')
-            if md5 not in md5dictionary:
-                md5dictionary[md5] = set()
             md5dictionary[md5].add(f.get('uuid'))
 
     for key, value in md5dictionary:
         if len(value) > 1:
             uuids_list = sorted(list(value))
             for uuid in uuids_list:
-                identical_files_list = [entry for entry in uuids_list if entry != uuid]
+                identical_files_list = [
+                    entry for entry in uuids_list if entry != uuid
+                ]
                 item_url = urljoin(url, uuid)
                 data = {
-                    "matching_md5sum": identical_files_list
+                    "matching_md5sum": identical_files_list,
                 }
                 r = session.patch(
                     item_url,
                     data=json.dumps(data),
                     headers={
                         'content-type': 'application/json',
-                        'accept': 'application/json'
+                        'accept': 'application/json',
                     },
                 )
                 if not r.ok:
-                    print ('{} {}\n{}'.format(r.status_code, r.reason, r.text))
+                    print('{} {}\n{}'.format(r.status_code, r.reason, r.text))
                 else:
                     out.write(
                         '{}\tmd5:{}\t{}\n'.format(
                             uuid,
                             key,
-                            identical_files_list)
+                            identical_files_list,
+                        )
                     )
 
                 out.flush()
 
-    finishing_run = 'FINISHED matching md5sum files detection at {}'.format(datetime.datetime.now())
+    finishing_run = 'FINISHED matching md5sum files detection at {}'.format(
+        datetime.datetime.now()
+    )
     out.write(finishing_run + '\n')
     out.flush()
     output_filename = out.name
     out.close()
 
-
     if bot_token:
         with open(output_filename, 'r') as output_file:
-            sc.api_call("files.upload",
-                        title=output_filename,
-                        channels='#bot-reporting',
-                        content=output_file.read(),
-                        as_user=True)
+            sc.api_call(
+                "files.upload",
+                title=output_filename,
+                channels='#bot-reporting',
+                content=output_file.read(),
+                as_user=True,
+            )
 
         sc.api_call(
             "chat.postMessage",
             channel="#bot-reporting",
             text=finishing_run,
-            as_user=True
+            as_user=True,
         )
+
 
 def main():
     import argparse
     parser = argparse.ArgumentParser(
-        description="Update experiments status", epilog=EPILOG,
+        description="Update experiments status",
+        epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        '--username', '-u', default='', help="HTTP username (access_key_id)")
+        '--username', '-u', default='', help="HTTP username (access_key_id)"
+    )
     parser.add_argument(
-        '--bot-token', default='', help="Slack bot token")
+        '--bot-token', default='', help="Slack bot token"
+    )
     parser.add_argument(
-        '--password', '-p', default='',
-        help="HTTP password (secret_access_key)")
+        '--password', '-p',
+        default='',
+        help="HTTP password (secret_access_key)",
+    )
     parser.add_argument(
-        '--out', '-o', type=argparse.FileType('w'), default=sys.stdout,
-        help="file to write json lines of results")
+        '--out', '-o', type=argparse.FileType('w'),
+        default=sys.stdout,
+        help="file to write json lines of results",
+    )
     parser.add_argument(
-        '--dry-run', action='store_true', help="Don't update status, just check")
+        '--dry-run',
+        action='store_true',
+        help="Don't update status, just check",
+    )
     parser.add_argument('url', help="server to post to")
     args = parser.parse_args()
     run(**vars(args))
