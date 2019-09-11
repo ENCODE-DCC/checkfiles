@@ -61,7 +61,7 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
     r = session.get(
         urljoin(
             url,
-            '/report/?type=File&field=uuid&field=status&field=md5sum&limit=all&'
+            '/search/?type=File&field=uuid&field=status&field=md5sum&limit=all'
         )
     )
     try:
@@ -78,7 +78,7 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
             md5 = f.get('md5sum')
             md5dictionary[md5].add(f.get('uuid'))
 
-    for key, value in md5dictionary:
+    for key, value in md5dictionary.items():
         if len(value) > 1:
             uuids_list = sorted(list(value))
             for uuid in uuids_list:
