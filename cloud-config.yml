@@ -30,8 +30,9 @@ runcmd:
 - systemctl daemon-reload  # See https://bugs.launchpad.net/cloud-init/+bug/1449318
 - mkdir -p /s3/encode-files
 - mkdir -p /s3/encoded-files-dev
+- mkdir -p /s3/encoded-public
 
-- curl -sS -L -o /usr/local/bin/goofys https://github.com/kahing/goofys/releases/download/v0.0.18/goofys
+- curl -sS -L -o /usr/local/bin/goofys https://github.com/kahing/goofys/releases/download/v0.21.0/goofys
 - chmod +x /usr/local/bin/goofys
 
 ## - mkdir -p /opt/goofys/bin
@@ -40,28 +41,6 @@ runcmd:
 ## - mv /opt/goofys/bin/goofys /usr/local/bin/
 
 - mount -a
-
-- mkdir /opt/encValData
-- chown build:build /opt/encValData
-- sudo -u build git clone --depth 1 https://github.com/ENCODE-DCC/encValData /opt/encValData
-
-- curl -sS -L -o /usr/local/bin/validateFiles http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/validateFiles
-- chmod +x /usr/local/bin/validateFiles
-
-- mkdir /opt/encoded
-- chown build:build /opt/encoded
-- mkdir /opt/encoded/checkfiles
-- chown build:build /opt/encoded/checkfiles
-- sudo -u build git clone --no-checkout https://github.com/ENCODE-DCC/checkfiles.git /opt/encoded/checkfiles
-- sudo -u build git -C /opt/encoded/checkfiles checkout %(COMMIT)s
-- chmod +x /opt/encoded/checkfiles/script
-
-- cd /opt/encoded/checkfiles
-- sudo -u build pyvenv .
-- sudo -u build bin/pip install -r requirements.txt
-
-- cd /home/ubuntu
-- nohup /opt/encoded/checkfiles/script $(cat /opt/checkfiles_args.txt) 2> errors.log 1> output.log &
 
 users:
 - default
@@ -73,11 +52,9 @@ users:
 mounts:
 - [ "goofys-ulimit#encode-files", "/s3/encode-files", "fuse", "_netdev,allow_other,--file-mode=0444,--dir-mode=0555,--stat-cache-ttl=0", "0", "0" ]
 - [ "goofys-ulimit#encoded-files-dev", "/s3/encoded-files-dev", "fuse", "_netdev,allow_other,--file-mode=0444,--dir-mode=0555,--stat-cache-ttl=0", "0", "0" ]
+- [ "goofys-ulimit#encoded-public", "/s3/encoded-public", "fuse", "_netdev,allow_other,--file-mode=0444,--dir-mode=0555,--stat-cache-ttl=0", "0", "0" ]
 
 write_files:
-- path: /opt/checkfiles_args.txt
-  content: |
-    %(ARGS)s
 - path: /etc/systemd/system/cloud-final.service.d/override.conf
   content: |
     [Service]
@@ -89,9 +66,3 @@ write_files:
     #!/bin/sh
     ulimit -n 60000
     exec goofys "$@"
-- path: /etc/rc.local
-  permissions: 0755
-  content: |
-    #!/bin/sh -e
-    cd /home/ubuntu; nohup /opt/encoded/checkfiles/script %(ARGS)s 2> errors.log 1> output.log &
-    exit 0
