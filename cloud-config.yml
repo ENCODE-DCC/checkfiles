@@ -27,7 +27,6 @@ runcmd:
 - pip install awscli
 - sudo -u ubuntu mv /home/ubuntu/.ssh/authorized_keys /home/ubuntu/.ssh/authorized_keys2
 - sudo -u ubuntu aws s3 cp --region=us-west-2 %(S3_AUTH_KEYS)s /home/ubuntu/.ssh/authorized_keys
-- sudo -u ubuntu aws s3 cp --recursive s3://encoded-conf-prod/.aws /home/ubuntu/.aws
 - systemctl daemon-reload  # See https://bugs.launchpad.net/cloud-init/+bug/1449318
 - mkdir -p /s3/encode-files
 - mkdir -p /s3/encoded-files-dev
