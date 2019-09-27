@@ -115,7 +115,6 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
     )
     out.write(finishing_run + '\n')
     out.flush()
-    output_filename = out.name
     out.close()
 
     if bot_token:
