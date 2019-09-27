@@ -119,15 +119,6 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
     out.close()
 
     if bot_token:
-        with open(output_filename, 'r') as output_file:
-            sc.api_call(
-                "files.upload",
-                title=output_filename,
-                channels='#bot-reporting',
-                content=output_file.read(),
-                as_user=True,
-            )
-
         sc.api_call(
             "chat.postMessage",
             channel="#bot-reporting",
