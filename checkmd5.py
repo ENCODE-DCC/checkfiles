@@ -76,7 +76,8 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
     for f in graph:
         if f.get('status') not in excluded_statuses:
             md5 = f.get('md5sum')
-            md5dictionary[md5].add(f.get('uuid'))
+            if md5:
+                md5dictionary[md5].add(f.get('uuid'))
 
     for key, value in md5dictionary.items():
         if len(value) > 1:
@@ -129,7 +130,7 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
 def main():
     import argparse
     parser = argparse.ArgumentParser(
-        description="Update experiments status",
+        description="Update files with identical MD5 values",
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
