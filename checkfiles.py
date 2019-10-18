@@ -35,7 +35,8 @@ GZIP_TYPES = [
     "tagAlign",
     "tar",
     "sam",
-    "wig"
+    "wig",
+    "vcf",
 ]
 
 read_name_prefix = re.compile(
@@ -1130,7 +1131,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
     except multiprocessing.NotImplmentedError:
         nprocesses = 1
 
-    version = '1.23'
+    version = '1.24'
 
     try:
         ip_output = subprocess.check_output(
