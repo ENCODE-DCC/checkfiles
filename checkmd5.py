@@ -73,11 +73,15 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
 
     excluded_statuses = ['uploading', 'upload failed', 'content error']
     md5dictionary = defaultdict(set)
+    clashing_dictionary = defaultdict(list)
     for f in graph:
         if f.get('status') not in excluded_statuses:
             md5 = f.get('md5sum')
             if md5:
                 md5dictionary[md5].add(f.get('uuid'))
+            matching_md5sum = f.get('matching_md5sum')
+            if matching_md5sum:
+                clashing_dictionary[f.get('uuid')] = sorted(matching_md5sum)
 
     for key, value in md5dictionary.items():
         if len(value) > 1:
@@ -86,30 +90,31 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
                 identical_files_list = [
                     entry for entry in uuids_list if entry != uuid
                 ]
-                item_url = urljoin(url, uuid)
-                data = {
-                    "matching_md5sum": identical_files_list,
-                }
-                r = session.patch(
-                    item_url,
-                    data=json.dumps(data),
-                    headers={
-                        'content-type': 'application/json',
-                        'accept': 'application/json',
-                    },
-                )
-                if not r.ok:
-                    print('{} {}\n{}'.format(r.status_code, r.reason, r.text))
-                else:
-                    out.write(
-                        '{}\tmd5:{}\t{}\n'.format(
-                            uuid,
-                            key,
-                            identical_files_list,
-                        )
+                if uuid not in clashing_dictionary or clashing_dictionary[uuid] != sorted(identical_files_list):
+                    item_url = urljoin(url, uuid)
+                    data = {
+                        "matching_md5sum": identical_files_list,
+                    }
+                    r = session.patch(
+                        item_url,
+                        data=json.dumps(data),
+                        headers={
+                            'content-type': 'application/json',
+                            'accept': 'application/json',
+                        },
                     )
+                    if not r.ok:
+                        print('{} {}\n{}'.format(r.status_code, r.reason, r.text))
+                    else:
+                        out.write(
+                            '{}\tmd5:{}\t{}\n'.format(
+                                uuid,
+                                key,
+                                identical_files_list,
+                            )
+                        )
 
-                out.flush()
+                    out.flush()
 
     finishing_run = 'FINISHED matching md5sum files detection at {}'.format(
         datetime.datetime.now()
