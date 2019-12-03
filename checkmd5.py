@@ -81,7 +81,10 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
                 md5dictionary[md5].add(f.get('uuid'))
             matching_md5sum = f.get('matching_md5sum')
             if matching_md5sum:
-                clashing_dictionary[f.get('uuid')] = sorted(matching_md5sum)
+                matching_md5sum_uuids = [
+                    entry.split('/')[2] for entry in matching_md5sum
+                ]
+                clashing_dictionary[f.get('uuid')] = sorted(matching_md5sum_uuids)
     for key, value in md5dictionary.items():
         if len(value) > 1:
             uuids_list = sorted(list(value))
