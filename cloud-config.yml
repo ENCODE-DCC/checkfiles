@@ -31,6 +31,8 @@ runcmd:
 - mkdir -p /s3/encode-files
 - mkdir -p /s3/encoded-files-dev
 - mkdir -p /s3/encode-public
+- mkdir -p /s3/encode-private
+- mkdir -p /s3/encode-public
 
 - curl -sS -L -o /usr/local/bin/goofys https://github.com/kahing/goofys/releases/download/v0.21.0/goofys
 - chmod +x /usr/local/bin/goofys
@@ -53,6 +55,7 @@ mounts:
 - [ "goofys-ulimit#encode-files", "/s3/encode-files", "fuse", "_netdev,allow_other,--file-mode=0444,--dir-mode=0555,--stat-cache-ttl=0", "0", "0" ]
 - [ "goofys-ulimit#encoded-files-dev", "/s3/encoded-files-dev", "fuse", "_netdev,allow_other,--file-mode=0444,--dir-mode=0555,--stat-cache-ttl=0", "0", "0" ]
 - [ "goofys-ulimit#encode-public", "/s3/encode-public", "fuse", "_netdev,allow_other,--file-mode=0444,--dir-mode=0555,--stat-cache-ttl=0", "0", "0" ]
+- [ "goofys-ulimit#encode-private", "/s3/encode-private", "fuse", "_netdev,allow_other,--file-mode=0444,--dir-mode=0555,--stat-cache-ttl=0", "0", "0" ]
 
 write_files:
 - path: /etc/systemd/system/cloud-final.service.d/override.conf
