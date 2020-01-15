@@ -61,7 +61,7 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
     r = session.get(
         urljoin(
             url,
-            '/search/?type=File&field=uuid&field=status&field=md5sum&field=matching_md5sum&limit=all'
+            '/search/?type=File&field=uuid&field=status&field=md5sum&field=matching_md5sum&limit=all&format=json'
         )
     )
     try:
@@ -93,6 +93,11 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
                     entry for entry in uuids_list if entry != uuid
                 ]
                 if uuid not in clashing_dictionary or clashing_dictionary[uuid] != sorted(identical_files_list):
+                    print ('uuid:' + str(uuid))
+                    if uuid not in clashing_dictionary:
+                        print ('not in clashing dictionary')
+                    else:
+                        print ('clashes with :' + str(sorted(identical_files_list)))
                     item_url = urljoin(url, uuid)
                     data = {
                         "matching_md5sum": identical_files_list,
