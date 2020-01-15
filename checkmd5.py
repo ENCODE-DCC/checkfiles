@@ -102,26 +102,27 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
                     data = {
                         "matching_md5sum": identical_files_list,
                     }
-                    r = session.patch(
-                        item_url,
-                        data=json.dumps(data),
-                        headers={
-                            'content-type': 'application/json',
-                            'accept': 'application/json',
-                        },
-                    )
-                    if not r.ok:
-                        print('{} {}\n{}'.format(r.status_code, r.reason, r.text))
-                    else:
-                        out.write(
-                            '{}\tmd5:{}\t{}\n'.format(
-                                uuid,
-                                key,
-                                identical_files_list,
-                            )
+                    if not dry_run:
+                        r = session.patch(
+                            item_url,
+                            data=json.dumps(data),
+                            headers={
+                                'content-type': 'application/json',
+                                'accept': 'application/json',
+                            },
                         )
+                        if not r.ok:
+                            print('{} {}\n{}'.format(r.status_code, r.reason, r.text))
+                        else:
+                            out.write(
+                                '{}\tmd5:{}\t{}\n'.format(
+                                    uuid,
+                                    key,
+                                    identical_files_list,
+                                )
+                            )
 
-                    out.flush()
+                        out.flush()
 
     finishing_run = 'FINISHED matching md5sum files detection at {}'.format(
         datetime.datetime.now()
