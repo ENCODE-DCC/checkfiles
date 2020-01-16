@@ -123,6 +123,12 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
                             )
 
                         out.flush()
+                else:
+                    print ('uuid:' + str(uuid))
+                    print ('IN CLASHING and IDENTICAL')
+                    print (clashing_dictionary[uuid])
+                    print (identical_files_list)
+                    print ("-----------------------------")
 
     finishing_run = 'FINISHED matching md5sum files detection at {}'.format(
         datetime.datetime.now()
