@@ -92,7 +92,7 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
                 identical_files_list = [
                     entry for entry in uuids_list if entry != uuid
                 ]
-                if uuid not in clashing_dictionary or clashing_dictionary[uuid] != sorted(identical_files_list):
+                if uuid not in clashing_dictionary or sorted(clashing_dictionary[uuid]) != sorted(identical_files_list):
                     print ('uuid:' + str(uuid))
                     if uuid not in clashing_dictionary:
                         print ('not in clashing dictionary')
