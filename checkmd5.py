@@ -61,7 +61,7 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
     r = session.get(
         urljoin(
             url,
-            '/search/?type=File&field=uuid&field=status&field=md5sum&field=matching_md5sum&limit=all&format=json'
+            '/search/?type=File&field=external_accession&field=accession&field=uuid&field=status&field=md5sum&field=matching_md5sum&limit=all&format=json'
         )
     )
     try:
@@ -70,6 +70,13 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
         return
     else:
         graph = r.json()['@graph']
+
+    accession_to_uuid = {}
+    for f in graph:
+        if (f.get('accession')):
+            accession_to_uuid[f.get('accession')] = f.get('uuid')
+        else:
+            accession_to_uuid[f.get('external_accession')] = f.get('uuid')
 
     excluded_statuses = ['uploading', 'upload failed', 'content error']
     md5dictionary = defaultdict(set)
@@ -82,8 +89,9 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
             matching_md5sum = f.get('matching_md5sum')
             if matching_md5sum:
                 matching_md5sum_uuids = [
-                    entry.split('/')[2] for entry in matching_md5sum
+                    accession_to_uuid.get(entry.split('/')[2]) for entry in matching_md5sum
                 ]
+                print ("MATCHING UUIDS: " + str(matching_md5sum_uuids))
                 clashing_dictionary[f.get('uuid')] = sorted(matching_md5sum_uuids)
     for key, value in md5dictionary.items():
         if len(value) > 1:
