@@ -89,9 +89,10 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
             matching_md5sum = f.get('matching_md5sum')
             if matching_md5sum:
                 matching_md5sum_uuids = [
-                    accession_to_uuid.get(entry.split('/')[2]) for entry in matching_md5sum
+                    accession_to_uuid.get(entry.split('/')[2]) 
+                        if entry.split('/')[2].startswith('ENCFF') 
+                        else entry.split('/')[2] for entry in matching_md5sum
                 ]
-                print ("MATCHING UUIDS: " + str(matching_md5sum_uuids))
                 clashing_dictionary[f.get('uuid')] = sorted(matching_md5sum_uuids)
     for key, value in md5dictionary.items():
         if len(value) > 1:
@@ -101,11 +102,6 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
                     entry for entry in uuids_list if entry != uuid
                 ]
                 if uuid not in clashing_dictionary or sorted(clashing_dictionary[uuid]) != sorted(identical_files_list):
-                    print ('uuid:' + str(uuid))
-                    if uuid not in clashing_dictionary:
-                        print ('not in clashing dictionary')
-                    else:
-                        print ('clashes with :' + str(sorted(identical_files_list)))
                     item_url = urljoin(url, uuid)
                     data = {
                         "matching_md5sum": identical_files_list,
@@ -131,12 +127,6 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
                             )
 
                         out.flush()
-                else:
-                    print ('uuid:' + str(uuid))
-                    print ('IN CLASHING and IDENTICAL')
-                    print (clashing_dictionary[uuid])
-                    print (identical_files_list)
-                    print ("-----------------------------")
 
     finishing_run = 'FINISHED matching md5sum files detection at {}'.format(
         datetime.datetime.now()
