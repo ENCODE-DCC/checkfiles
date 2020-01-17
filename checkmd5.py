@@ -89,9 +89,10 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
             matching_md5sum = f.get('matching_md5sum')
             if matching_md5sum:
                 matching_md5sum_uuids = [
-                    accession_to_uuid.get(entry.split('/')[2]) 
-                        if entry.split('/')[2].startswith('ENCFF') 
-                        else entry.split('/')[2] for entry in matching_md5sum
+                    entry.split('/')[2] 
+                        if (len(entry.split('/')[2]) == 36 
+                            and (entry.split('/')[2]).find('-') != -1)
+                        else accession_to_uuid.get(entry.split('/')[2]) for entry in matching_md5sum
                 ]
                 clashing_dictionary[f.get('uuid')] = sorted(matching_md5sum_uuids)
     for key, value in md5dictionary.items():
