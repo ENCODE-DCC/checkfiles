@@ -61,7 +61,7 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
     r = session.get(
         urljoin(
             url,
-            '/search/?type=File&field=uuid&field=status&field=md5sum&limit=all'
+            '/search/?type=File&field=external_accession&field=accession&field=uuid&field=status&field=md5sum&field=matching_md5sum&limit=all&format=json'
         )
     )
     try:
@@ -71,14 +71,30 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
     else:
         graph = r.json()['@graph']
 
+    accession_to_uuid = {}
+    for f in graph:
+        if (f.get('accession')):
+            accession_to_uuid[f.get('accession')] = f.get('uuid')
+        else:
+            accession_to_uuid[f.get('external_accession')] = f.get('uuid')
+
     excluded_statuses = ['uploading', 'upload failed', 'content error']
     md5dictionary = defaultdict(set)
+    clashing_dictionary = defaultdict(list)
     for f in graph:
         if f.get('status') not in excluded_statuses:
             md5 = f.get('md5sum')
             if md5:
                 md5dictionary[md5].add(f.get('uuid'))
-
+            matching_md5sum = f.get('matching_md5sum')
+            if matching_md5sum:
+                matching_md5sum_uuids = [
+                    entry.split('/')[2] 
+                        if (len(entry.split('/')[2]) == 36 
+                            and (entry.split('/')[2]).find('-') != -1)
+                        else accession_to_uuid.get(entry.split('/')[2]) for entry in matching_md5sum
+                ]
+                clashing_dictionary[f.get('uuid')] = sorted(matching_md5sum_uuids)
     for key, value in md5dictionary.items():
         if len(value) > 1:
             uuids_list = sorted(list(value))
@@ -86,30 +102,32 @@ def run(out, url, username, password, bot_token=None, dry_run=False):
                 identical_files_list = [
                     entry for entry in uuids_list if entry != uuid
                 ]
-                item_url = urljoin(url, uuid)
-                data = {
-                    "matching_md5sum": identical_files_list,
-                }
-                r = session.patch(
-                    item_url,
-                    data=json.dumps(data),
-                    headers={
-                        'content-type': 'application/json',
-                        'accept': 'application/json',
-                    },
-                )
-                if not r.ok:
-                    print('{} {}\n{}'.format(r.status_code, r.reason, r.text))
-                else:
-                    out.write(
-                        '{}\tmd5:{}\t{}\n'.format(
-                            uuid,
-                            key,
-                            identical_files_list,
+                if uuid not in clashing_dictionary or sorted(clashing_dictionary[uuid]) != sorted(identical_files_list):
+                    item_url = urljoin(url, uuid)
+                    data = {
+                        "matching_md5sum": identical_files_list,
+                    }
+                    if not dry_run:
+                        r = session.patch(
+                            item_url,
+                            data=json.dumps(data),
+                            headers={
+                                'content-type': 'application/json',
+                                'accept': 'application/json',
+                            },
                         )
-                    )
+                        if not r.ok:
+                            print('{} {}\n{}'.format(r.status_code, r.reason, r.text))
+                        else:
+                            out.write(
+                                '{}\tmd5:{}\t{}\n'.format(
+                                    uuid,
+                                    key,
+                                    identical_files_list,
+                                )
+                            )
 
-                out.flush()
+                        out.flush()
 
     finishing_run = 'FINISHED matching md5sum files detection at {}'.format(
         datetime.datetime.now()
