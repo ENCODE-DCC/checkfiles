@@ -1134,7 +1134,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
     except multiprocessing.NotImplmentedError:
         nprocesses = 1
 
-    version = '1.24'
+    version = '1.25'
 
     try:
         ip_output = subprocess.check_output(
