@@ -62,7 +62,6 @@ pacbio_read_name_pattern = re.compile(
 )
 
 def is_path_gzipped(path):
-    print (path)
     with open(path, 'rb') as f:
         magic_number = f.read(2)
     return magic_number == b'\x1f\x8b'
