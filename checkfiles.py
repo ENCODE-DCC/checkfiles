@@ -860,12 +860,9 @@ def check_file(config, session, url, job):
                 update_content_error(errors,
                                      'File metadata-specified md5sum {} '.format(item['md5sum']) +
                                      'does not match the calculated md5sum {}'.format(result['md5sum']))
-        print ("checking the path: " + str(local_path))
         try:
             is_gzipped = is_path_gzipped(local_path)
         except Exception as e:
-            print (local_path)
-            errors['zopa'] = local_path
             return job
         else:
             if item['file_format'] not in GZIP_TYPES:
