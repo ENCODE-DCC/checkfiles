@@ -1007,8 +1007,6 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
         if r.ok:
             upload_credentials = r.json()['@graph'][0]['upload_credentials']
             job['upload_url'] = upload_credentials['upload_url']
-            if result.get('s3_uri'):
-                job['upload_url'] = result.get('s3_uri')
             # Files grandfathered from EDW have no upload expiration.
             job['upload_expiration'] = upload_credentials.get('expiration', '')
             # Only check files that will not be changed during the check.
