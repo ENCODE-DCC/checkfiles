@@ -45,12 +45,12 @@ read_name_prefix = re.compile(
 
 read_name_pattern = re.compile(
     '^(@[a-zA-Z\d]+[a-zA-Z\d_-]*:[a-zA-Z\d-]+:[a-zA-Z\d_-]' +
-    '+:\d+:\d+:\d+:\d+[\s_][12]:[YXN]:[0-9]+:([ACNTG\+]*|[0-9]*))$'
+    '+:\d+:\d+:\d+:\d+[\s_][123]:[YXN]:[0-9]+:([ACNTG\+]*|[0-9]*))$'
 )
 
 special_read_name_pattern = re.compile(
     '^(@[a-zA-Z\d]+[a-zA-Z\d_-]*:[a-zA-Z\d-]+:[a-zA-Z\d_-]' +
-    '+:\d+:\d+:\d+:\d+[/1|/2]*[\s_][12]:[YXN]:[0-9]+:([ACNTG\+]*|[0-9]*))$'
+    '+:\d+:\d+:\d+:\d+[/1|/2]*[\s_][123]:[YXN]:[0-9]+:([ACNTG\+]*|[0-9]*))$'
 )
 
 srr_read_name_pattern = re.compile(
