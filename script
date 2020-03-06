@@ -2,8 +2,9 @@
 while :
     do
         now=$(date +"%Y%m%d%H%M%S")
-        /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkfiles.py "$@" --out $now-checkfiles.log --err $now-checkfiles-error.log --include-unexpired-upload 2> $now-file-errors.log 1> $now-file-output.log
-        /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkexperiments.py "$@" --out $now-checkexperiments.log --err $now-checkexperiments-error.log 2> $now-exp-errors.log 1> $now-exp-output.log
-        /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkmd5.py "$@" --out $now-checkmd5.log 2> $now-md5-errors.log 1> $now-md5-output.log
+        url=$(echo "$@" | rev | cut -d " " -f 1 | rev | sed -e 's|^[^/]*//||' -e 's|/.*$||' | cut -d "." -f 1)
+        /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkfiles.py "$@" --out $now-checkfiles-$url.log --err $now-checkfiles-error-$url.log --include-unexpired-upload 2> $now-file-errors-$url.log 1> $now-file-output-$url.log
+        /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkexperiments.py "$@" --out $now-checkexperiments-$url.log --err $now-checkexperiments-error-$url.log 2> $now-exp-errors-$url.log 1> $now-exp-output-$url.log
+        /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkmd5.py "$@" --out $now-checkmd5-$url.log 2> $now-md5-errors-$url.log 1> $now-md5-output-$url.log
         sleep 480m
 done
