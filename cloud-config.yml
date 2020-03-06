@@ -60,10 +60,13 @@ runcmd:
 
 - cd /opt/encoded/checkfiles
 - sudo -u build pyvenv .
-- sudo -u build bin/pip install -r requirements.txt
+- sudo -u build bin/pip install -r requirements.txt 
 
 - cd /home/ubuntu
 - nohup /opt/encoded/checkfiles/script $(cat /opt/checkfiles_args.txt) 2> errors.log 1> output.log &
+- cut -d " " -f 1-6 /opt/checkfiles_args.txt > /opt/test_args.txt 
+- echo "$(cat /opt/test_args.txt) https://test.encodedcc.org" > /opt/test_args.txt
+- nohup /opt/encoded/checkfiles/script "$(cat /opt/test_args.txt)" 2> errors_test.log 1> output_test.log &
 
 users:
 - default
@@ -97,5 +100,5 @@ write_files:
   permissions: 0755
   content: |
     #!/bin/sh -e
-    cd /home/ubuntu; nohup /opt/encoded/checkfiles/script %(ARGS)s 2> errors.log 1> output.log &
+    cd /home/ubuntu; nohup /opt/encoded/checkfiles/script %(ARGS)s 2> errors.log 1> output.log &; nohup /opt/encoded/checkfiles/script "$(cat /opt/test_args.txt)" 2> errors.log 1> output.log &;  
     exit 0
