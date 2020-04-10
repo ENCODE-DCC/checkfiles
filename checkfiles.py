@@ -1004,12 +1004,14 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
         item_url = urljoin(url, job['@id'])
         fileObject = session.get(item_url)
         r = session.get(item_url + '@@upload?datastore=database')
-        if r.ok:
+        if not fileObject.ok:
+            errors['file_HTTPError'] = ('HTTP error: unable to get file object')
+        if fileObject.ok and r.ok:
             upload_credentials = r.json()['@graph'][0]['upload_credentials']
             try: 
                 if fileObject.json()['s3_uri']:
                     job['s3_uri'] = fileObject.json()['s3_uri']
-            except:
+            except KeyError:
                 errors['s3_uri_missing'] = ('s3 uri is not present for this file')
 
             # Files grandfathered from EDW have no upload expiration.
