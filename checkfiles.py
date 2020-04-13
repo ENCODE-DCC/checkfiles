@@ -809,8 +809,8 @@ def check_file(config, session, url, job):
         if no_file_flag:
             return job
         else:
-            upload_url = job['upload_url']
-            local_path = os.path.join(config['mirror'], upload_url[len('s3://'):])
+            s3_uri = job['s3_uri']
+            local_path = os.path.join(config['mirror'], s3_uri[len('s3://'):])
     # boolean standing for local .bed file creation
     is_local_bed_present = False
     if item['file_format'] == 'bed':
@@ -1002,11 +1002,18 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
         }
         errors = job['errors']
         item_url = urljoin(url, job['@id'])
-
+        fileObject = session.get(item_url)
         r = session.get(item_url + '@@upload?datastore=database')
-        if r.ok:
+        if not fileObject.ok:
+            errors['file_HTTPError'] = ('HTTP error: unable to get file object')
+        if fileObject.ok and r.ok:
             upload_credentials = r.json()['@graph'][0]['upload_credentials']
-            job['upload_url'] = upload_credentials['upload_url']
+            try: 
+                if fileObject.json()['s3_uri']:
+                    job['s3_uri'] = fileObject.json()['s3_uri']
+            except KeyError:
+                errors['s3_uri_missing'] = ('s3 uri is not present for this file')
+
             # Files grandfathered from EDW have no upload expiration.
             job['upload_expiration'] = upload_credentials.get('expiration', '')
             # Only check files that will not be changed during the check.
@@ -1194,7 +1201,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
 
         jobs = fetch_files(session, url, search_query, out, include_unexpired_upload, file_list, local_file)
         if not json_out:
-            headers = '\t'.join(['Accession', 'Lab', 'Errors', 'Aliases', 'Upload URL',
+            headers = '\t'.join(['Accession', 'Lab', 'Errors', 'Aliases', 'S3 uri',
                                  'Upload Expiration'])
             out.write(headers + '\n')
             out.flush()
@@ -1206,7 +1213,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
                 job['item'].get('lab', 'UNKNOWN'),
                 str(job['errors']),
                 str(job['item'].get('aliases', ['n/a'])),
-                job.get('upload_url', ''),
+                job.get('s3_uri', ''),
                 job.get('upload_expiration', ''),
                 ])
             if json_out:
