@@ -58,7 +58,7 @@ srr_read_name_pattern = re.compile(
 )
 
 pacbio_read_name_pattern = re.compile(
-    '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@m\d+_\d{6}_\d{6}\/.*)$|^(@c.+)$'
+    '^(@m\d{6}_\d{6}_\d+_[a-zA-Z\d_-]+\/.*)$|^(@m\d+U?_\d{6}_\d{6}\/.*)$|^(@c.+)$'
 )
 
 def is_path_gzipped(path):
