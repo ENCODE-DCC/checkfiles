@@ -815,8 +815,8 @@ def check_file(config, session, url, job):
         if no_file_flag:
             return job
         else:
-            s3_uri = job['s3_uri']
-            local_path = os.path.join(config['mirror'], s3_uri[len('s3://'):])
+            download_url = job['download_url']
+            local_path = os.path.join(config['mirror'], download_url[len('s3://'):])
     # boolean standing for local .bed file creation
     is_local_bed_present = False
     if item['file_format'] == 'bed':
@@ -1016,9 +1016,14 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
             upload_credentials = r.json()['@graph'][0]['upload_credentials']
             try: 
                 if fileObject.json()['s3_uri']:
-                    job['s3_uri'] = fileObject.json()['s3_uri']
+                    job['download_url'] = fileObject.json()['s3_uri']
             except KeyError:
-                errors['s3_uri_missing'] = ('s3 uri is not present for this file')
+                job['download_url'] = upload_credentials['upload_url']
+                if not job['download_url']:
+                    errors['download_url_missing'] = ('download url is missing')
+        else:
+            job['errors']['get_upload_url_request'] = \
+                '{} {}\n{}'.format(r.status_code, r.reason, r.text)
 
             # Files grandfathered from EDW have no upload expiration.
             job['upload_expiration'] = upload_credentials.get('expiration', '')
@@ -1030,9 +1035,6 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
                         'check was skipped due to file\'s '
                         'unexpired upload credentials'
                     )
-        else:
-            job['errors']['get_upload_url_request'] = \
-                '{} {}\n{}'.format(r.status_code, r.reason, r.text)
 
         r = session.get(item_url + '?frame=edit&datastore=database')
         if r.ok:
@@ -1207,7 +1209,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
 
         jobs = fetch_files(session, url, search_query, out, include_unexpired_upload, file_list, local_file)
         if not json_out:
-            headers = '\t'.join(['Accession', 'Lab', 'Errors', 'Aliases', 'S3 uri',
+            headers = '\t'.join(['Accession', 'Lab', 'Errors', 'Aliases', 'Download URL',
                                  'Upload Expiration'])
             out.write(headers + '\n')
             out.flush()
@@ -1219,7 +1221,7 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
                 job['item'].get('lab', 'UNKNOWN'),
                 str(job['errors']),
                 str(job['item'].get('aliases', ['n/a'])),
-                job.get('s3_uri', ''),
+                job.get('download_url', ''),
                 job.get('upload_expiration', ''),
                 ])
             if json_out:
