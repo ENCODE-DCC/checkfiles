@@ -1021,10 +1021,6 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
                 job['download_url'] = upload_credentials['upload_url']
                 if not job['download_url']:
                     errors['download_url_missing'] = ('download url is missing')
-        else:
-            job['errors']['get_upload_url_request'] = \
-                '{} {}\n{}'.format(r.status_code, r.reason, r.text)
-
             # Files grandfathered from EDW have no upload expiration.
             job['upload_expiration'] = upload_credentials.get('expiration', '')
             # Only check files that will not be changed during the check.
@@ -1035,7 +1031,9 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
                         'check was skipped due to file\'s '
                         'unexpired upload credentials'
                     )
-
+        else:
+            job['errors']['get_upload_url_request'] = \
+                '{} {}\n{}'.format(r.status_code, r.reason, r.text)
         r = session.get(item_url + '?frame=edit&datastore=database')
         if r.ok:
             item = job['item'] = r.json()
