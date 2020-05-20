@@ -34,6 +34,7 @@ GZIP_TYPES = [
     "gtf",
     "tagAlign",
     "tar",
+    "txt",
     "sam",
     "wig",
     "vcf",
