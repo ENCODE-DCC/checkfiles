@@ -64,8 +64,7 @@ runcmd:
 
 - cd /home/ubuntu
 - nohup /opt/encoded/checkfiles/script $(cat /opt/checkfiles_args.txt) 2> errors_prod.log 1> output_prod.log &
-
-- echo "$(cut -d " " -f 1-6 /opt/checkfiles_args.txt) https://test.encodedcc.org" > /opt/test_args.txt
+- nohup /opt/encoded/checkfiles/writeTestArgs $(cat /opt/checkfiles_args.txt | rev | cut -d " " -f 2- | rev) > /opt/test_args.txt
 - nohup /opt/encoded/checkfiles/script $(cat /opt/test_args.txt) 2> errors_test.log 1> output_test.log &
 
 users:
@@ -100,5 +99,6 @@ write_files:
   permissions: 0755
   content: |
     #!/bin/sh -e
-    cd /home/ubuntu; nohup /opt/encoded/checkfiles/script %(ARGS)s 2> errors_prod.log 1> output_prod.log &; nohup /opt/encoded/checkfiles/script $(cat /opt/test_args.txt) 2> errors_test.log 1> output_test.log &;  
+    cd /home/ubuntu; nohup /opt/encoded/checkfiles/script %(ARGS)s 2> errors_prod.log 1> output_prod.log & 
+    nohup /opt/encoded/checkfiles/script $(cat /opt/test_args.txt) 2> errors_test.log 1> output_test.log &  
     exit 0
