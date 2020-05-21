@@ -1018,8 +1018,9 @@ def fetch_files(session, url, search_query, out, include_unexpired_upload=False,
                 if fileObject.json()['s3_uri']:
                     job['download_url'] = fileObject.json()['s3_uri']
             except KeyError:
-                job['download_url'] = upload_credentials['upload_url']
-                if not job['download_url']:
+                try:
+                    job['download_url'] = upload_credentials['upload_url']
+                except KeyError:
                     errors['download_url_missing'] = ('download url is missing')
             # Files grandfathered from EDW have no upload expiration.
             job['upload_expiration'] = upload_credentials.get('expiration', '')
