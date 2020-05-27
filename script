@@ -4,7 +4,7 @@ while :
         now=$(date +"%Y%m%d%H%M%S")
         url=$(echo "$@" | rev | cut -d " " -f 1 | rev ) # obtain url from total list of arguments
         parsedURL=$(echo $url | sed -e 's|^[^/]*//||' | cut -d "." -f 1) # remove protocol and only keep relevant name of url
-        /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkfiles.py "$@" --out $now-checkfiles-$parsedURL.log --err $now-checkfiles-error-$parsedURL.log --include-unexpired-upload 2> $now-file-errors-$parsedURLurl.log 1> $now-file-output-$parsedURL.log
+        /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkfiles.py "$@" --out $now-checkfiles-$parsedURL.log --err $now-checkfiles-error-$parsedURL.log --include-unexpired-upload 2> $now-file-errors-$parsedURL.log 1> $now-file-output-$parsedURL.log
         /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkexperiments.py "$@" --out $now-checkexperiments-$parsedURL.log --err $now-checkexperiments-error-$parsedURL.log 2> $now-exp-errors-$parsedURL.log 1> $now-exp-output-$parsedURL.log
         /opt/encoded/checkfiles/bin/python /opt/encoded/checkfiles/checkmd5.py "$@" --out $now-checkmd5-$parsedURL.log 2> $now-md5-errors-$parsedURL.log 1> $now-md5-output-$parsedURL.log
         sleep 480m
