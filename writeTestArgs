@@ -1,0 +1,26 @@
+#!/bin/bash
+EXTRA=() # array to hold extra positional arguments
+while [[ $# -gt 0 ]] # number of arguments needs to be greater than 0
+do
+key="$1" 
+case $key in
+    --username)
+    USERNAME="$2"
+    shift 2 # pass username and value
+    ;;
+    --password)
+    PASSWORD="$2"
+    shift 2 # pass password and value
+    ;;
+    --bot-token)
+    BOT="$2"
+    shift 2 # pass bot-token and value
+    ;;
+    *)    # unnecessary option
+    EXTRA+=("$1") # save it in an array to allow completion of script
+    shift # pass anything not specified, default: 1
+    ;;
+esac
+done
+set -- "${EXTRA[@]}" # restore positional parameters to allow rest of script to run without the extra options
+echo "--username ${USERNAME} --password ${PASSWORD} --bot-token ${BOT} https://test.encodedcc.org/"
