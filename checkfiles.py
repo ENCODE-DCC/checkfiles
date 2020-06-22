@@ -183,6 +183,7 @@ def check_format(encValData, job, path):
         ('bigBed', 'idr_peak'): ['-type=bigBed6+', chromInfo, '-as=%s/as/idr_peak.as' % encValData],
         ('bed', 'tss_peak'): ['-type=bed6+', chromInfo, '-as=%s/as/tss_peak.as' % encValData],
         ('bigBed', 'tss_peak'): ['-type=bigBed6+', chromInfo, '-as=%s/as/tss_peak.as' % encValData],
+        ('bed', 'idr_ranked_peak'): ['-type=bed6+14', chromInfo, '-as=%s/as/idr_ranked_peak.as' % encValData],
 
 
         ('bedpe', None): ['-type=bed3+', chromInfo],
