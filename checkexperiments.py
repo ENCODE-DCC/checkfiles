@@ -97,6 +97,10 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
             r.raise_for_status()
         except requests.HTTPError:
             return
+        try:
+            graph = r.json()['@graph']
+        except:
+            print("I can't grab graph!!!")
         else:
             graph = r.json()['@graph']
 
