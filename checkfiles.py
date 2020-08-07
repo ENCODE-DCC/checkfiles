@@ -1121,13 +1121,6 @@ def patch_file(session, url, job):
     return
 
 
-def wait_until_indexed(session, url):
-    response = 'indexing'
-    while response != 'waiting':
-        response = session.get(urljoin(url, '_indexer')).json()['status']
-        time.sleep(60)
-
-
 def run(out, err, url, username, password, encValData, mirror, search_query, file_list=None,
         bot_token=None, local_file=None, processes=None, include_unexpired_upload=False,
         dry_run=False, json_out=False):
@@ -1160,113 +1153,86 @@ def run(out, err, url, username, password, encValData, mirror, search_query, fil
     except subprocess.CalledProcessError as e:
         ip = ''
 
-    # waiting for complete indexing of the site prior to checkfiles run!
-    try:
-        wait_until_indexed(session, url)
-    except requests.exceptions.RequestException as e:
-        error_waiting = 'STARTING Checkfiles version ' \
-                    '{} ({}) ({}): with {} processes {} ' \
-                    'on {} at {}. Error while waiting for ' \
-                    'the site to be fully indexed : {}'.format(
-                        version,
-                        url,
-                        search_query,
-                        nprocesses,
-                        dr,
-                        ip,
-                        datetime.datetime.now(),
-                        str(e))
-        if bot_token:
-            sc = SlackClient(bot_token)
-            sc.api_call(
-                "chat.postMessage",
-                channel="#bot-reporting",
-                text=error_waiting,
-                as_user=True
-            )
-        out.write('ERROR while waiting to the site to be fully indexed\n' + str(e) + '\n')
-        out.flush()
+    initiating_run = 'STARTING Checkfiles version ' + \
+        '{} ({}) ({}): with {} processes {} on {} at {}'.format(
+            version, url, search_query, nprocesses, dr, ip, datetime.datetime.now())
+    if bot_token:
+        sc = SlackClient(bot_token)
+        sc.api_call(
+            "chat.postMessage",
+            channel="#bot-reporting",
+            text=initiating_run,
+            as_user=True
+        )
+
+    out.write(initiating_run + '\n')
+    out.flush()
+    if processes == 0:
+        # Easier debugging without multiprocessing.
+        imap = map
     else:
-        initiating_run = 'STARTING Checkfiles version ' + \
-            '{} ({}) ({}): with {} processes {} on {} at {}'.format(
-                version, url, search_query, nprocesses, dr, ip, datetime.datetime.now())
-        if bot_token:
-            sc = SlackClient(bot_token)
-            sc.api_call(
-                "chat.postMessage",
-                channel="#bot-reporting",
-                text=initiating_run,
-                as_user=True
-            )
+        pool = multiprocessing.Pool(processes=processes)
+        imap = pool.imap_unordered
 
-        out.write(initiating_run + '\n')
+    jobs = fetch_files(session, url, search_query, out, include_unexpired_upload, file_list, local_file)
+    if not json_out:
+        headers = '\t'.join(['Accession', 'Lab', 'Errors', 'Aliases', 'Download URL',
+                                'Upload Expiration'])
+        out.write(headers + '\n')
         out.flush()
-        if processes == 0:
-            # Easier debugging without multiprocessing.
-            imap = map
-        else:
-            pool = multiprocessing.Pool(processes=processes)
-            imap = pool.imap_unordered
-
-        jobs = fetch_files(session, url, search_query, out, include_unexpired_upload, file_list, local_file)
-        if not json_out:
-            headers = '\t'.join(['Accession', 'Lab', 'Errors', 'Aliases', 'Download URL',
-                                 'Upload Expiration'])
-            out.write(headers + '\n')
+    for job in imap(functools.partial(check_file, config, session, url), jobs):
+        if not dry_run:
+            patch_file(session, url, job)
+        tab_report = '\t'.join([
+            job['item'].get('accession', 'UNKNOWN'),
+            job['item'].get('lab', 'UNKNOWN'),
+            str(job['errors']),
+            str(job['item'].get('aliases', ['n/a'])),
+            job.get('download_url', ''),
+            job.get('upload_expiration', ''),
+            ])
+        if json_out:
+            out.write(json.dumps(job) + '\n')
             out.flush()
-        for job in imap(functools.partial(check_file, config, session, url), jobs):
-            if not dry_run:
-                patch_file(session, url, job)
-            tab_report = '\t'.join([
-                job['item'].get('accession', 'UNKNOWN'),
-                job['item'].get('lab', 'UNKNOWN'),
-                str(job['errors']),
-                str(job['item'].get('aliases', ['n/a'])),
-                job.get('download_url', ''),
-                job.get('upload_expiration', ''),
-                ])
-            if json_out:
-                out.write(json.dumps(job) + '\n')
-                out.flush()
-                if job['errors']:
-                    err.write(json.dumps(job) + '\n')
-                    err.flush()
-            else:
-                out.write(tab_report + '\n')
-                out.flush()
-                if job['errors']:
-                    err.write(tab_report + '\n')
-                    err.flush()
+            if job['errors']:
+                err.write(json.dumps(job) + '\n')
+                err.flush()
+        else:
+            out.write(tab_report + '\n')
+            out.flush()
+            if job['errors']:
+                err.write(tab_report + '\n')
+                err.flush()
 
-        finishing_run = 'FINISHED Checkfiles at {}'.format(datetime.datetime.now())
-        out.write(finishing_run + '\n')
-        out.flush()
-        output_filename = out.name
-        out.close()
-        error_filename = err.name
-        err.close()
+    finishing_run = 'FINISHED Checkfiles at {}'.format(datetime.datetime.now())
+    out.write(finishing_run + '\n')
+    out.flush()
+    output_filename = out.name
+    out.close()
+    error_filename = err.name
+    err.close()
 
-        if bot_token:
-            with open(output_filename, 'r') as output_file:
-                x = sc.api_call("files.upload",
-                                title=output_filename,
-                                channels='#bot-reporting',
-                                content=output_file.read(),
-                                as_user=True)
+    if bot_token:
+        with open(output_filename, 'r') as output_file:
+            x = sc.api_call("files.upload",
+                            title=output_filename,
+                            channels='#bot-reporting',
+                            content=output_file.read(),
+                            as_user=True)
 
-            with open(error_filename, 'r') as output_file:
-                x = sc.api_call("files.upload",
-                                title=error_filename,
-                                channels='#bot-reporting',
-                                content=output_file.read(),
-                                as_user=True)
+        with open(error_filename, 'r') as output_file:
+            x = sc.api_call("files.upload",
+                            title=error_filename,
+                            channels='#bot-reporting',
+                            content=output_file.read(),
+                            as_user=True)
 
-            sc.api_call(
-                "chat.postMessage",
-                channel="#bot-reporting",
-                text=finishing_run,
-                as_user=True
-            )
+        sc.api_call(
+            "chat.postMessage",
+            channel="#bot-reporting",
+            text=finishing_run,
+            as_user=True
+        )
 
 def main():
     import argparse
