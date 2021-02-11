@@ -150,8 +150,8 @@ def main():
         '--image-id', default='ami-0a00ce72',
         help="ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20171026.1")
     parser.add_argument(
-        '--instance-type', default='c4.xlarge',
-        help="specify 'c4.8xlarge' if there are many files to check")
+        '--instance-type', default='c5.2xlarge',
+        help="specify 'c5.9xlarge' if there are many files to check")
     parser.add_argument(
         '--profile-name', default=None, help="AWS creds profile")
     parser.add_argument(
