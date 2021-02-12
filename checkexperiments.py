@@ -212,9 +212,18 @@ def run(out, err, url, username, password, search_query, accessions_list=None, b
                         audit_request = session.get(urljoin(
                             url,
                             '/' + exp_accession + '?frame=page&format=json'))
-                        audit_obj = audit_request.json().get('audit')
-                        if audit_obj.get("ERROR"):
-                            pass_audit = False
+                        try:
+                            audit_obj = audit_request.json().get('audit')
+                        except ValueError as e:
+                            err.write('{}\t{}\t{}\tValueError: {}\n'.format(
+                                    award_rfa,
+                                    assay_term_name,
+                                    exp_accession, e)
+                            )
+                            err.flush()
+                        else:
+                            if audit_obj.get("ERROR"):
+                                pass_audit = False
                     except requests.exceptions.RequestException as e:
                         print (e)
                         continue
