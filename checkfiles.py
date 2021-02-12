@@ -632,16 +632,19 @@ def process_read_lengths(read_lengths_dict,
                          result):
     reads_quantity = sum([count for length, count in read_lengths_dict.items()
                           if (submitted_read_length - 2) <= length <= (submitted_read_length + 2)])
+    informative_length_list = []
+    for readLength in lengths_list:
+        informative_length_list.append('bp, '.join(map(str,readLength)))
     if ((threshold_percentage * read_count) > reads_quantity):
         errors_to_report['read_length'] = \
-            'in file metadata the read_length is {}, '.format(submitted_read_length) + \
+            'in file metadata the read_length is {}bp, '.format(submitted_read_length) + \
             'however the uploaded fastq file contains reads of following length(s) ' + \
-            '{}. '.format(', '.join(map(str, lengths_list)))
+            '{}. '.format(', '.join(map(str, ['(%s)' % item for item in informative_length_list])))
         update_content_error(errors_to_report,
-                             'Fastq file metadata specified read length was {}, '.format(
+                             'Fastq file metadata specified read length was {}bp, '.format(
                                  submitted_read_length) +
                              'but the file contains read length(s) {}'.format(
-                                 ', '.join(map(str, lengths_list))))
+                                ', '.join(map(str, ['(%s)' %item for item in informative_length_list]))))
 
 
 def create_a_list_of_barcodes(details):
