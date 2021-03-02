@@ -34,7 +34,7 @@ runcmd:
 - mkdir -p /s3/encode-private
 - mkdir -p /s3/encode-public
 
-- curl -sS -L -o /usr/local/bin/goofys https://github.com/kahing/goofys/releases/download/v0.23.1/goofys
+- curl -sS -L -o /usr/local/bin/goofys https://github.com/kahing/goofys/releases/download/v0.24.0/goofys
 - chmod +x /usr/local/bin/goofys
 
 ## - mkdir -p /opt/goofys/bin
