@@ -51,6 +51,12 @@ runcmd:
 - curl -sS -L -o /usr/local/bin/validateFiles http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/validateFiles
 - chmod +x /usr/local/bin/validateFiles
 
+- curl -sS -L -o /usr/local/bin/ https://github.com/samtools/samtools/releases/download/1.11/samtools-1.11.tar.bz2
+- tar -jxvf samtools-1.11.tar.bz2
+- cd /usr/local/bin/samtools-1.11
+- make install
+
+- cd /home/ubuntu
 - mkdir /opt/encoded
 - chown build:build /opt/encoded
 - mkdir /opt/encoded/checkfiles
