@@ -19,6 +19,9 @@ packages:
 - python3-dev
 - python3-venv
 - libcurl3
+- libncurses5-dev
+- liblzma-dev
+- libbz2-dev
 
 ## power_state:
 ##   mode: poweroff
@@ -51,10 +54,12 @@ runcmd:
 - curl -sS -L -o /usr/local/bin/validateFiles http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/validateFiles
 - chmod +x /usr/local/bin/validateFiles
 
-- curl -sS -L -o /usr/local/bin/ https://github.com/samtools/samtools/releases/download/1.11/samtools-1.11.tar.bz2
-- tar -jxvf samtools-1.11.tar.bz2
-- cd /usr/local/bin/samtools-1.11
-- make install
+- cd /home/ubuntu
+- wget https://github.com/samtools/samtools/releases/download/1.11/samtools-1.11.tar.bz2
+- sudo tar -jxvf samtools-1.11.tar.bz2
+- cd samtools-1.11
+- sudo make
+- sudo make install
 
 - cd /home/ubuntu
 - mkdir /opt/encoded
