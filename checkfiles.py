@@ -109,6 +109,19 @@ def check_format(encValData, job, path):
     else:
         chromInfo = '-chromInfo={}/{}/chrom.sizes'.format(encValData, assembly)
 
+    # separate bam validation using samtools quickcheck
+    if item.get('file_format') == 'bam':
+        try:
+            output = subprocess.check_output(
+                ['samtools'] + ['quickcheck'] + [path], stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            errors['bamValidation'] = e.output.decode(errors='replace').rstrip('\n')
+            update_content_error(errors, 'File failed samtools quickcheck ' +
+                                        'bam validation.' + errors['bamValidation'])
+        else:
+            result['bamValidation'] = output.decode(errors='replace').rstrip('\n')
+
+
     validate_map = {
         ('fasta', None): ['-type=fasta'],
         ('fastq', None): ['-type=fastq'],
