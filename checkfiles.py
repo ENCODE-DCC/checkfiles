@@ -116,8 +116,8 @@ def check_format(encValData, job, path):
                 ['samtools'] + ['quickcheck'] + [path], stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             errors['bamValidation'] = e.output.decode(errors='replace').rstrip('\n')
-            update_content_error(errors, 'File failed samtools quickcheck ' +
-                                        'bam validation.' + errors['bamValidation'])
+            update_content_error(errors, 'File failed bam validation ' +
+                                        '(samtools quickcheck). ' + errors['bamValidation'])
         else:
             result['bamValidation'] = output.decode(errors='replace').rstrip('\n')
 
