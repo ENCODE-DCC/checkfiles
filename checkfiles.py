@@ -113,7 +113,7 @@ def check_format(encValData, job, path):
     if item.get('file_format') == 'bam':
         try:
             output = subprocess.check_output(
-                ['samtools'] + ['quickcheck'] + [path], stderr=subprocess.STDOUT)
+                ['samtools', 'quickcheck', path], stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             errors['bamValidation'] = e.output.decode(errors='replace').rstrip('\n')
             update_content_error(errors, 'File failed bam validation ' +
