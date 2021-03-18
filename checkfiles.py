@@ -21,6 +21,7 @@ from slackclient import SlackClient
 
 EPILOG = __doc__
 
+# For submitters, bam files should not be submitted as .gz
 GZIP_TYPES = [
     "CEL",
     "bam",
