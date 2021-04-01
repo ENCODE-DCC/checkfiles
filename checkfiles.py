@@ -21,6 +21,7 @@ from slackclient import SlackClient
 
 EPILOG = __doc__
 
+# For submitters, bam files should not be submitted as .gz
 GZIP_TYPES = [
     "CEL",
     "bam",
@@ -86,6 +87,7 @@ def check_format(encValData, job, path):
     errors = job['errors']
     item = job['item']
     result = job['result']
+    subreads = False
 
     # if assembly is in the map, use the mapping, otherwise just use the string in assembly
     assembly = ASSEMBLY_MAP.get(item.get('assembly'), item.get('assembly'))
@@ -106,6 +108,10 @@ def check_format(encValData, job, path):
         else:
             chromInfo = '-chromInfo={}/{}/{}/gene.sizes'.format(
                 encValData, assembly, item['genome_annotation'])
+    elif (item.get('file_format') == 'bam' and 
+        file_output_type in ['subreads']):
+        subreads = True
+        chromInfo = ''
     else:
         chromInfo = '-chromInfo={}/{}/chrom.sizes'.format(encValData, assembly)
 
@@ -223,26 +229,28 @@ def check_format(encValData, job, path):
         ('btr', None): None
     }
 
-    validate_args = validate_map.get((item['file_format'], item.get('file_format_type')))
-    if validate_args is None:
-        return
+    if not subreads:
+        validate_args = validate_map.get((item['file_format'], item.get('file_format_type')))
+        if validate_args is None:
+            return
 
-    if chromInfo in validate_args and 'assembly' not in item:
-        errors['assembly'] = 'missing assembly'
-        update_content_error(errors, 'File metadata lacks assembly information')
-        return
+        if chromInfo in validate_args and 'assembly' not in item:
+            errors['assembly'] = 'missing assembly'
+            update_content_error(errors, 'File metadata lacks assembly information')
+            return
 
-    result['validateFiles_args'] = ' '.join(validate_args)
+        result['validateFiles_args'] = ' '.join(validate_args)
 
-    try:
-        output = subprocess.check_output(
-            ['validateFiles'] + validate_args + [path], stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        errors['validateFiles'] = e.output.decode(errors='replace').rstrip('\n')
-        update_content_error(errors, 'File failed file format specific ' +
-                                     'validation (encValData) ' + errors['validateFiles'])
-    else:
-        result['validateFiles'] = output.decode(errors='replace').rstrip('\n')
+    
+        try:
+            output = subprocess.check_output(
+                ['validateFiles'] + validate_args + [path], stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            errors['validateFiles'] = e.output.decode(errors='replace').rstrip('\n')
+            update_content_error(errors, 'File failed file format specific ' +
+                                         'validation (encValData) ' + errors['validateFiles'])
+        else:
+            result['validateFiles'] = output.decode(errors='replace').rstrip('\n')
 
 
 def process_illumina_read_name_pattern(read_name,
