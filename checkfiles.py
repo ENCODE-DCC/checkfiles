@@ -120,6 +120,7 @@ def check_format(encValData, job, path):
         ('fastq', None): ['-type=fastq'],
         ('bam', None): ['-type=bam', chromInfo],
         ('bigWig', None): ['-type=bigWig', chromInfo],
+        ('bigInteract', None): ['-type=bigBed5+13', chromInfo, '-as=%s/as/interact.as' % encValData],
         # standard bed formats
         ('bed', 'bed3'): ['-type=bed3', chromInfo],
         ('bigBed', 'bed3'): ['-type=bigBed3', chromInfo],
