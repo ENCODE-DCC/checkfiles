@@ -688,6 +688,26 @@ def compare_flowcell_details(flowcell_details_1, flowcell_details_2):
     return False
 
 
+def  get_mapped_run_type_bam(job, bam_data_stream):
+    """ 
+    obtain mapped run type from all bams by using samtools stats
+    """
+    for line in bam_data_stream.stdout.readlines():
+        line = line.strip()
+        if 'SN' in line and 'reads paired' in line.strip():
+            line = line.split('\t')
+            numPairedReads = line[2]
+
+    runType = None
+    if numPairedReads:
+        if int(numPairedReads) > 0:
+            runType = 'paired-ended'
+        else:
+            runType = 'single-ended'
+
+    return runType
+
+
 def get_read_name_details(job_id, errors, session, url):
     query = job_id +'?datastore=database&frame=object&format=json'
     try:
@@ -964,6 +984,17 @@ def check_file(config, session, url, job):
                 except subprocess.CalledProcessError as e:
                     errors['fastq_information_extraction'] = 'Failed to extract information from ' + \
                                                             local_path
+            if item['file_format'] == 'bam' and not errors.get('validateFiles') and 'subreads' not in item['output_type']:
+                try:
+                    runType= get_mapped_run_type_bam(job,subprocess.Popen(
+                        ['samtools', 'stats', local_path], 
+                                                    stdout=subprocess.PIPE, 
+                                                    universal_newlines=True))
+                    if runType:
+                        result['mapped_run_type'] = runType
+                except subprocess.CalledProcessError as e:
+                    errors['bam_run_type_extraction'] = 'Failed to extract information from ' + \
+                                                            local_path
         if item['status'] != 'uploading':
             errors['status_check'] = \
                 "status '{}' is not 'uploading'".format(item['status'])
@@ -1113,6 +1144,8 @@ def patch_file(session, url, job):
         data['fastq_signature'] = result['fastq_signature']
     if 'content_md5sum' in result:
         data['content_md5sum'] = result['content_md5sum']
+    if 'mapped_run_type' in result:
+        data['mapped_run_type'] = result['mapped_run_type']
 
     if data:
         item_url = urljoin(url, job['@id'])
