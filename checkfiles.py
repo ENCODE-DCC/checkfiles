@@ -192,7 +192,8 @@ def check_format(encValData, job, path):
         ('bed', 'idr_ranked_peak'): ['-type=bed6+14', chromInfo, '-as=%s/as/idr_ranked_peak.as' % encValData],
         ('bed', 'element enrichments'): ['-type=bed6+5', chromInfo, '-as=%s/as/mpra_starr.as' % encValData],
         ('bigBed', 'element enrichments'): ['-type=bigBed6+5', chromInfo, '-as=%s/as/mpra_starr.as' % encValData],
-
+        ('bed', 'CRISPR element quantifications'): ['-type=bed3+22', chromInfo, '-as=%s/as/element_quant_format.as' % encValData],
+        
         ('bedpe', None): ['-type=bed3+', chromInfo],
         ('bedpe', 'mango'): ['-type=bed3+', chromInfo],
         # non-bed types
