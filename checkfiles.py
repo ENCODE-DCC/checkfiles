@@ -253,6 +253,76 @@ def check_format(encValData, job, path):
         else:
             result['validateFiles'] = output.decode(errors='replace').rstrip('\n')
 
+def validate_crispr(job, filePath):
+    '''
+    ENCODE CRISPR Group provided scripts for guide quantification validation
+    which can be found here: https://github.com/oh-jinwoo94/ENCODE by Jin Woo Oh 
+    '''
+    errors = job['errors']
+    item = job['item']
+    result = job['result']
+
+    guide_validationScript_path = '/opt/ENCODE_CRISPR_Validation/check_guide_quant_format.py'
+    pam_validationScript_path =  '/opt/ENCODE_CRISPR_Validation/check_PAM.py'
+    guide_format_path = '/opt/ENCODE_CRISPR_Validation/guide_quant_format.txt'
+    genome_reference_path  = '/opt/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta'
+
+    try:
+        output = subprocess.Popen(  
+                            ['python', guide_validationScript_path,
+                            guide_format_path, filePath],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True)
+        
+        checkPAM = False
+        for line in output.stdout.readlines():
+            line = line.strip()
+            
+            try:
+                assert('passed' in line)
+                checkPAM = True
+
+            except AssertionError:
+                errors['CRISPR_guide_quant_validation'] = line
+                update_content_error(errors, 'File failed CRISPR guide quantification format validation ' +
+                                            '(check_guide_quant_format.py). ' + errors['CRISPR_guide_quant_validation'])
+            else:
+                result['CRISPR_guide_quant_validation'] = line
+      
+        if checkPAM:
+            try:
+                output = subprocess.Popen(  
+                                ['python', pam_validationScript_path,
+                                filePath,
+                                genome_reference_path],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True)
+
+                count = 0
+                for line in output.stdout.readlines():
+                    line  = line.strip()
+                    if count == 3:
+                        try:
+                            assert('More than 80% of the PAMs are NGG. The coordinates are likely to be correct' in line)
+
+                        except AssertionError:
+                            errors['CRISPR_PAM_validation'] = line
+                            update_content_error(errors, 'File failed CRISPR PAM validation ' +
+                                            '(check_PAM.py). ' + errors['CRISPR_PAM_validation'])
+                        else:
+                            result['CRISPR_PAM_validation'] = line
+                    count+=1
+
+            except subprocess.CalledProcessError as e:
+                errors['CRISPR_PAM_info_extraction'] = 'Failed to extract information from ' + \
+                                                            local_path
+            
+    except subprocess.CalledProcessError as e:
+        errors['CRISPR_guide_info_extraction'] = 'Failed to extract information from ' + \
+                                                            local_path
+    
 
 def process_illumina_read_name_pattern(read_name,
                                        read_numbers_set,
@@ -689,7 +759,7 @@ def compare_flowcell_details(flowcell_details_1, flowcell_details_2):
     return False
 
 
-def  get_mapped_run_type_bam(job, bam_data_stream):
+def get_mapped_run_type_bam(job, bam_data_stream):
     """ 
     obtain mapped run type from all bams by using samtools stats
     """
@@ -996,6 +1066,12 @@ def check_file(config, session, url, job):
                 except subprocess.CalledProcessError as e:
                     errors['bam_run_type_extraction'] = 'Failed to extract information from ' + \
                                                             local_path
+            if item['file_format'] == 'tsv' and item['output_type'] == 'guide quantifications':
+                try:
+                    if item['file_format_type'] == 'guide quantifications':
+                        validate_crispr(job, local_path)
+                except KeyError:
+                    pass
         if item['status'] != 'uploading':
             errors['status_check'] = \
                 "status '{}' is not 'uploading'".format(item['status'])

@@ -53,6 +53,12 @@ runcmd:
 - chown build:build /opt/encValData
 - sudo -u build git clone --depth 1 https://github.com/ENCODE-DCC/encValData /opt/encValData
 
+- mkdir /opt/ENCODE_CRISPR_Validation
+- chown build:build /opt/ENCODE_CRISPR_Validation
+- sudo -u build git clone --depth 1 -b v1.3 https://github.com/oh-jinwoo94/ENCODE /opt/ENCODE_CRISPR_Validation
+- touch /opt/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+- gunzip --stdout "/s3/encode-public/2015/12/03/a7fea375-057d-4cdc-8ccd-0b0f930823df/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz" > /opt/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+
 - curl -sS -L -o /usr/local/bin/validateFiles http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/validateFiles
 - chmod +x /usr/local/bin/validateFiles
 
