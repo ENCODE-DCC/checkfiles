@@ -1068,7 +1068,7 @@ def check_file(config, session, url, job):
                                                             local_path
             if item['file_format'] == 'tsv' and item['output_type'] == 'guide quantifications':
                 try:
-                    if item['file_format_type'] == 'guide quantifications':
+                    if item['file_format_type'] == 'guide quantifications' and item['assembly'] == 'GRCh38':
                         validate_crispr(job, local_path)
                 except KeyError:
                     pass
