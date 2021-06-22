@@ -771,14 +771,14 @@ def get_mapped_run_type_bam(job, bam_data_stream):
         try:
             assert('Failure' not in line)
         except AssertionError:
-            errors['samtools_stats_validation'] = line
-            update_content_error(errors, 'File failed samtools stats validation ' +
-                                            errors['samtools_stats_validation'])
+            errors['samtools_stats_decoding_failure'] = line
+            update_content_error(errors, 'File failed samtools stats extraction. ' +
+                                            errors['samtools_stats_decoding_failure'])
         else:
             if 'SN' in line and 'reads paired' in line.strip():
                 line = line.split('\t')
                 numPairedReads = line[2]
-                result['samtools_stats_validation'] = line
+                result['samtools_stats_mapped_run_type_extraction'] = line
     runType = None
     if numPairedReads:
         if int(numPairedReads) > 0:
@@ -801,13 +801,13 @@ def  get_mapped_read_length_bam(job, bam_data_stream):
         try:
             assert('Failure' not in line)
         except AssertionError:
-            errors['samtools_stats_validation'] = line
-            update_content_error(errors, 'File failed samtools stats validation ' +
-                                            errors['samtools_stats_validation'])
+            errors['samtools_stats_decoding_failure'] = line
+            update_content_error(errors, 'File failed samtools stats extraction. ' +
+                                            errors['samtools_stats_decoding_failure'])
         else:
             line = line.split('\t')
             readLength = int(line[0])
-            result['samtools_stats_validation'] = line  
+            result['samtools_stats_mapped_read_length_extraction'] = line  
     return readLength
 
 
@@ -1178,11 +1178,21 @@ def check_file(config, session, url, job):
                                                             executable='/bin/bash',
                                                             universal_newlines=True))
                         except subprocess.CalledProcessError as e:
-                            errors['bam_information_extraction'] = 'Failed to extract information from ' + \
+                            errors['samtools_stats_extraction'] = 'Failed to extract information from ' + \
+                                                                    local_path
+                            update_content_error(errors, 'File failed samtools stats extraction ' +
+                                            errors['samtools_stats_extraction'])
+                        else:
+                            result['samtools_stats_extraction'] = 'Failed to extract information from ' + \
                                                                     local_path
                         if runType and readLength:
                                 result['mapped_run_type'] = runType
                                 result['mapped_read_length'] = readLength
+                        else:
+                            errors['missing_mapped_properties'] = 'Failed to extract mapped read length and/or mapped run type from ' + \
+                                                                    local_path
+                            update_content_error(errors, 'File failed samtools stats extraction. ' +
+                                            errors['missing_mapped_properties'])
         if item['status'] != 'uploading':
             errors['status_check'] = \
                 "status '{}' is not 'uploading'".format(item['status'])
