@@ -764,12 +764,22 @@ def get_mapped_run_type_bam(job, bam_data_stream):
     """ 
     obtain mapped run type from all bams by using samtools stats
     """
+    errors = job['errors']
+    result = job['result']
+    numPairedReads = None
     for line in bam_data_stream.stdout.readlines():
         line = line.strip()
-        if 'SN' in line and 'reads paired' in line.strip():
-            line = line.split('\t')
-            numPairedReads = line[2]
-
+        try:
+            assert('Failure' not in line)
+        except AssertionError:
+            errors['samtools_stats_decoding_failure'] = line
+            update_content_error(errors, 'File failed samtools stats extraction. ' +
+                                            errors['samtools_stats_decoding_failure'])
+        else:
+            if 'SN' in line and 'reads paired' in line.strip():
+                line = line.split('\t')
+                numPairedReads = line[2]
+                result['samtools_stats_mapped_run_type_extraction'] = line
     runType = None
     if numPairedReads:
         if int(numPairedReads) > 0:
@@ -778,6 +788,28 @@ def get_mapped_run_type_bam(job, bam_data_stream):
             runType = 'single-ended'
 
     return runType
+
+
+def  get_mapped_read_length_bam(job, bam_data_stream):
+    """ 
+    obtain mapped read length from all bams by using samtools stats
+    """
+    errors = job['errors']
+    result = job['result']
+    readLength = None
+    for line in bam_data_stream.stdout.readlines():
+        line = line.strip()
+        try:
+            assert('Failure' not in line)
+        except AssertionError:
+            errors['samtools_stats_decoding_failure'] = line
+            update_content_error(errors, 'File failed samtools stats extraction. ' +
+                                            errors['samtools_stats_decoding_failure'])
+        else:
+            line = line.split('\t')
+            readLength = int(line[0])
+            result['samtools_stats_mapped_read_length_extraction'] = line  
+    return readLength
 
 
 def get_read_name_details(job_id, errors, session, url):
@@ -813,6 +845,57 @@ def get_platform_uuid(job_id, errors, session, url):
                 platform_uuid = r.json().get('uuid')
                 return platform_uuid
         return platform_id  
+
+def get_all_derived_from(job_id, errors, session, url):
+    '''
+    following logic from property_closure function from encoded
+    '''
+    derived_from_list = set()
+    remaining = {str(job_id)}
+    while remaining:
+        derived_from_list.update(remaining)
+        next_remaining = set()
+        for file in remaining: 
+            query = file +'?datastore=database&frame=object&format=json'
+            try:
+                r = session.get(urljoin(url, query))
+            except requests.exceptions.RequestException as e:
+                errors['lookup_for_file_derived_from'] = ('Network error occured, while looking for '
+                                                'derived_from on the portal. {}').format(str(e))
+            else:
+                try:
+                    next_remaining.update(r.json().get('derived_from'))
+                except TypeError:
+                    pass 
+        remaining = next_remaining - derived_from_list
+    return derived_from_list
+
+
+def get_platform_from_bams(job_id, errors, session, url):
+    query = job_id +'?datastore=database&frame=object&format=json'
+    platform_list = []
+    try:
+        r = session.get(urljoin(url, query))
+    except requests.exceptions.RequestException as e:
+        errors['lookup_for_derived_from'] = ('Network error occured, while looking for '
+                                         'derived_from on the portal. {}').format(str(e))
+    else:
+        derived_from_list = get_all_derived_from(r.json().get('@id'), errors, session, url)
+        if derived_from_list:
+            for file in derived_from_list:
+                query = file +'?datastore=database&frame=object&format=json'
+                try:
+                    r = session.get(urljoin(url, query))
+                except requests.exceptions.RequestException as e:
+                    errors['lookup_for_file'] = ('Network error occured, while looking for '
+                                                    'file_format on the portal. {}').format(str(e))
+                else:
+                    file_format = r.json().get('file_format')
+                    if file_format == 'fastq':
+                        platform_uuid = get_platform_uuid(file, errors, session, url)
+                        if platform_uuid:
+                            platform_list.append(platform_uuid)
+    return set(platform_list)
 
 
 def check_for_fastq_signature_conflicts(session,
@@ -1056,23 +1139,61 @@ def check_file(config, session, url, job):
                 except subprocess.CalledProcessError as e:
                     errors['fastq_information_extraction'] = 'Failed to extract information from ' + \
                                                             local_path
-            if item['file_format'] == 'bam' and not errors.get('validateFiles') and 'subreads' not in item['output_type']:
-                try:
-                    runType= get_mapped_run_type_bam(job,subprocess.Popen(
-                        ['samtools', 'stats', local_path], 
-                                                    stdout=subprocess.PIPE, 
-                                                    universal_newlines=True))
-                    if runType:
-                        result['mapped_run_type'] = runType
-                except subprocess.CalledProcessError as e:
-                    errors['bam_run_type_extraction'] = 'Failed to extract information from ' + \
-                                                            local_path
             if item['file_format'] == 'tsv' and item['output_type'] == 'guide quantifications':
                 try:
                     if item['file_format_type'] == 'guide quantifications' and item['assembly'] == 'GRCh38':
                         validate_crispr(job, local_path)
                 except KeyError:
                     pass
+            if item['file_format'] == 'bam' and not errors.get('validateFiles') and 'subreads' not in item['output_type']:
+                platform_list = get_platform_from_bams(job.get('@id'), errors, session, url)
+                if platform_list:
+                    not_Nanopore_PacBio = True
+                    for platform in platform_list:
+                        if platform in ['ced61406-dcc6-43c4-bddd-4c977cc676e8',
+                                        'c7564b38-ab4f-4c42-a401-3de48689a998',
+                                        'e2be5728-5744-4da4-8881-cb9526d0389e',
+                                        '7cc06b8c-5535-4a77-b719-4c23644e767d',
+                                        '8f1a9a8c-3392-4032-92a8-5d196c9d7810',
+                                        '6c275b37-018d-4bf8-85f6-6e3b830524a9',
+                                        '6ce511d5-eeb3-41fc-bea7-8c38301e88c1'
+                                        ]:
+                            not_Nanopore_PacBio = False
+                            break
+                    if not_Nanopore_PacBio:
+                        runType = None
+                        readLength = None
+                        try:
+                            runType = get_mapped_run_type_bam(job,subprocess.Popen(
+                                ['samtools', 'stats', local_path], 
+                                                            stdout=subprocess.PIPE,
+                                                            stderr=subprocess.PIPE, 
+                                                            universal_newlines=True))
+                            # command from samtools documentation: http://www.htslib.org/doc/samtools-stats.html 
+                            readLength = get_mapped_read_length_bam(job,subprocess.Popen(
+                                ['samtools stats {} | grep ^RL | cut -f 2- | sort -k2 -n -r | head -1'.format(
+                                                            local_path)], 
+                                                            stdout=subprocess.PIPE,
+                                                            stderr=subprocess.PIPE,
+                                                            shell=True,
+                                                            executable='/bin/bash',
+                                                            universal_newlines=True))
+                        except subprocess.CalledProcessError as e:
+                            errors['samtools_stats_extraction'] = 'Failed to extract information from ' + \
+                                                                    local_path
+                            update_content_error(errors, 'File failed samtools stats extraction ' +
+                                            errors['samtools_stats_extraction'])
+                        else:
+                            result['samtools_stats_extraction'] = 'Failed to extract information from ' + \
+                                                                    local_path
+                        if runType and readLength:
+                                result['mapped_run_type'] = runType
+                                result['mapped_read_length'] = readLength
+                        else:
+                            errors['missing_mapped_properties'] = 'Failed to extract mapped read length and/or mapped run type from ' + \
+                                                                    local_path
+                            update_content_error(errors, 'File failed samtools stats extraction. ' +
+                                            errors['missing_mapped_properties'])
         if item['status'] != 'uploading':
             errors['status_check'] = \
                 "status '{}' is not 'uploading'".format(item['status'])
@@ -1224,6 +1345,8 @@ def patch_file(session, url, job):
         data['content_md5sum'] = result['content_md5sum']
     if 'mapped_run_type' in result:
         data['mapped_run_type'] = result['mapped_run_type']
+    if 'mapped_read_length' in result:
+        data['mapped_read_length'] = result['mapped_read_length']
 
     if data:
         item_url = urljoin(url, job['@id'])
