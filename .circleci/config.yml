@@ -22,16 +22,16 @@ jobs:
           name: Hello world 
           command: echo "hello world"
 
-  realTests:
-    docker:
-        - image: circleci/python:3.8.5
+  real-tests:
+      docker:
+          - image: circleci/python:3.8.5
       steps:
-        - checkout
-        - run: 
-            name: pytests
-            command: |
-              test_basic_deployment.py
-              test_files.py
+          - checkout
+          - run: 
+              name: pytests
+              command: |
+                test_basic_deployment.py
+                test_files.py
 
 
 workflows:
