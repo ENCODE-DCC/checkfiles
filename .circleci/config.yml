@@ -3,24 +3,36 @@ version: 2.1
 # Use a package of configuration called an orb.
 jobs:
   build:
-      docker:
-        - image: circleci/python:3.8.5
-      steps:
-        - checkout
-        - run: 
-            name: install dependencies and deploy 
-            command: |
-              pip install -r requirements-deploy.txt
-              pip list
+    docker:
+      - image: circleci/python:3.8.5
+    steps:
+      - checkout
+      - run: 
+          name: Install dependencies and deploy 
+          command: |
+            pip install -r requirements-deploy.txt
+            pip install pytest
 
   test:
-      docker:
+    docker:
+      - image: circleci/python:3.8.5
+    steps:
+      - checkout
+      - run: 
+          name: Hello world 
+          command: echo "hello world"
+
+  realTests:
+    docker:
         - image: circleci/python:3.8.5
       steps:
         - checkout
         - run: 
-            name: Hello world 
-            command: echo "hello world"
+            name: pytests
+            command: |
+              test_basic_deployment.py
+              test_files.py
+
 
 workflows:
   build_and_tests:
