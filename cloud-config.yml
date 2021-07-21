@@ -24,13 +24,14 @@ packages:
 - libbz2-dev
 - libz-dev
 - libcurl4-openssl-dev
+- python3-pip
 
 ## power_state:
 ##   mode: poweroff
 
 runcmd:
 - set -ex
-- pip install awscli
+- pip3 install awscli
 - sudo -u ubuntu mv /home/ubuntu/.ssh/authorized_keys /home/ubuntu/.ssh/authorized_keys2
 - sudo -u ubuntu aws s3 cp --region=us-west-2 %(S3_AUTH_KEYS)s /home/ubuntu/.ssh/authorized_keys
 - systemctl daemon-reload  # See https://bugs.launchpad.net/cloud-init/+bug/1449318
