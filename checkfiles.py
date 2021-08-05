@@ -580,6 +580,11 @@ def process_fastq_file(job, fastq_data_stream, session, url):
     errors = job['errors']
     result = job['result']
 
+    # Ultima FASTQs should be excluded from read name, length, signature checks
+    platform_uuid = get_platform_uuid(job.get('@id'), errors, session, url)
+    if platform_uuid in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
+        return
+
     read_name_details = get_read_name_details(job.get('@id'), errors, session, url)
 
     read_numbers_set = set()
@@ -636,7 +641,7 @@ def process_fastq_file(job, fastq_data_stream, session, url):
         for k in sorted(read_lengths_dictionary.keys()):
             read_lengths_list.append((k, read_lengths_dictionary[k]))
 
-        #excluding pacbio from read_length verification
+        #excluding Pacbio, Nanopore, and Ultima from read_length verification
         platform_uuid = get_platform_uuid(job.get('@id'), errors, session, url)
         if platform_uuid not in ['ced61406-dcc6-43c4-bddd-4c977cc676e8',
                                  'c7564b38-ab4f-4c42-a401-3de48689a998',
@@ -644,7 +649,8 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                                  '7cc06b8c-5535-4a77-b719-4c23644e767d',
                                  '8f1a9a8c-3392-4032-92a8-5d196c9d7810',
                                  '6c275b37-018d-4bf8-85f6-6e3b830524a9',
-                                 '6ce511d5-eeb3-41fc-bea7-8c38301e88c1'
+                                 '6ce511d5-eeb3-41fc-bea7-8c38301e88c1',
+                                 '25acccbd-cb36-463b-ac96-adbac11227e6'
                                  ]:
             if 'read_length' in item and item['read_length'] > 2:
                 process_read_lengths(read_lengths_dictionary,
@@ -1148,7 +1154,7 @@ def check_file(config, session, url, job):
             if item['file_format'] == 'bam' and not errors.get('validateFiles') and 'subreads' not in item['output_type']:
                 platform_list = get_platform_from_bams(job.get('@id'), errors, session, url)
                 if platform_list:
-                    not_Nanopore_PacBio = True
+                    not_Nanopore_PacBio_Ultima = True
                     for platform in platform_list:
                         if platform in ['ced61406-dcc6-43c4-bddd-4c977cc676e8',
                                         'c7564b38-ab4f-4c42-a401-3de48689a998',
@@ -1156,11 +1162,12 @@ def check_file(config, session, url, job):
                                         '7cc06b8c-5535-4a77-b719-4c23644e767d',
                                         '8f1a9a8c-3392-4032-92a8-5d196c9d7810',
                                         '6c275b37-018d-4bf8-85f6-6e3b830524a9',
-                                        '6ce511d5-eeb3-41fc-bea7-8c38301e88c1'
+                                        '6ce511d5-eeb3-41fc-bea7-8c38301e88c1',
+                                        '25acccbd-cb36-463b-ac96-adbac11227e6'
                                         ]:
-                            not_Nanopore_PacBio = False
+                            not_Nanopore_PacBio_Ultima = False
                             break
-                    if not_Nanopore_PacBio:
+                    if not_Nanopore_PacBio_Ultima:
                         runType = None
                         readLength = None
                         try:
