@@ -602,16 +602,17 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                     
                     # may be from here deliver a flag about the presence/absence of the readnamedetails
 
-                    old_illumina_current_prefix = \
-                        process_read_name_line(
-                            line,
-                            old_illumina_current_prefix,
-                            read_numbers_set,
-                            signatures_no_barcode_set,
-                            signatures_set,
-                            read_lengths_dictionary,
-                            errors, False,
-                            read_name_details)
+                    if platform_uuid not in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
+                        old_illumina_current_prefix = \
+                            process_read_name_line(
+                                line,
+                                old_illumina_current_prefix,
+                                read_numbers_set,
+                                signatures_no_barcode_set,
+                                signatures_set,
+                                read_lengths_dictionary,
+                                errors, False,
+                                read_name_details)
             if line_index == 2:
                 read_count += 1
                 process_sequence_line(line, read_lengths_dictionary)
