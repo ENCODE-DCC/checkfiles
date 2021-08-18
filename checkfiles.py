@@ -580,12 +580,10 @@ def process_fastq_file(job, fastq_data_stream, session, url):
     errors = job['errors']
     result = job['result']
 
-    # Ultima FASTQs should be excluded from read name, length, signature checks
     platform_uuid = get_platform_uuid(job.get('@id'), errors, session, url)
-    if platform_uuid in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
-        return
-
-    read_name_details = get_read_name_details(job.get('@id'), errors, session, url)
+    # Ultima FASTQs should be excluded from read name checks
+    if platform_uuid not in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
+        read_name_details = get_read_name_details(job.get('@id'), errors, session, url)
 
     read_numbers_set = set()
     signatures_set = set()
@@ -629,12 +627,14 @@ def process_fastq_file(job, fastq_data_stream, session, url):
         result['read_count'] = read_count
 
         # read1/read2
-        if len(read_numbers_set) > 1:
-            errors['inconsistent_read_numbers'] = \
-                'fastq file contains mixed read numbers ' + \
-                '{}.'.format(', '.join(sorted(list(read_numbers_set))))
-            update_content_error(errors,
-                                 'Fastq file contains a mixture of read1 and read2 sequences')
+        # Ultima FASTQs should be excluded from read pairing checks
+        if platform_uuid not in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
+            if len(read_numbers_set) > 1:
+                errors['inconsistent_read_numbers'] = \
+                    'fastq file contains mixed read numbers ' + \
+                    '{}.'.format(', '.join(sorted(list(read_numbers_set))))
+                update_content_error(errors,
+                                     'Fastq file contains a mixture of read1 and read2 sequences')
 
         # read_length
         read_lengths_list = []
@@ -642,7 +642,6 @@ def process_fastq_file(job, fastq_data_stream, session, url):
             read_lengths_list.append((k, read_lengths_dictionary[k]))
 
         #excluding Pacbio, Nanopore, and Ultima from read_length verification
-        platform_uuid = get_platform_uuid(job.get('@id'), errors, session, url)
         if platform_uuid not in ['ced61406-dcc6-43c4-bddd-4c977cc676e8',
                                  'c7564b38-ab4f-4c42-a401-3de48689a998',
                                  'e2be5728-5744-4da4-8881-cb9526d0389e',
@@ -669,6 +668,9 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                                      'but the file contains read length(s) {}'.format(
                                          ', '.join(map(str, read_lengths_list))))
         # signatures
+        # Ultima FASTQs should be excluded from signature checks
+        if platform_uuid in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
+            return
         signatures_for_comparison = set()
         is_UMI = False
         if 'flowcell_details' in item and len(item['flowcell_details']) > 0:
