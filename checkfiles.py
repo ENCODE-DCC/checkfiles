@@ -581,9 +581,7 @@ def process_fastq_file(job, fastq_data_stream, session, url):
     result = job['result']
 
     platform_uuid = get_platform_uuid(job.get('@id'), errors, session, url)
-    # Ultima FASTQs should be excluded from read name checks
-    if platform_uuid not in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
-        read_name_details = get_read_name_details(job.get('@id'), errors, session, url)
+    read_name_details = get_read_name_details(job.get('@id'), errors, session, url)
 
     read_numbers_set = set()
     signatures_set = set()
