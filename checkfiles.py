@@ -613,11 +613,11 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                                 read_lengths_dictionary,
                                 errors, False,
                                 read_name_details)
-            if line_index == 2:
-                read_count += 1
-                process_sequence_line(line, read_lengths_dictionary)
+                if line_index == 2:
+                    read_count += 1
+                    process_sequence_line(line, read_lengths_dictionary)
 
-            line_index = line_index % 4
+                line_index = line_index % 4
     except IOError:
         errors['unzipped_fastq_streaming'] = 'Error occured, while streaming unzipped fastq.'
     else:
