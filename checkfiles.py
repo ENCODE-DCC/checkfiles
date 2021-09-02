@@ -580,6 +580,7 @@ def process_fastq_file(job, fastq_data_stream, session, url):
     errors = job['errors']
     result = job['result']
 
+    platform_uuid = get_platform_uuid(job.get('@id'), errors, session, url)
     read_name_details = get_read_name_details(job.get('@id'), errors, session, url)
 
     read_numbers_set = set()
@@ -601,21 +602,22 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                     
                     # may be from here deliver a flag about the presence/absence of the readnamedetails
 
-                    old_illumina_current_prefix = \
-                        process_read_name_line(
-                            line,
-                            old_illumina_current_prefix,
-                            read_numbers_set,
-                            signatures_no_barcode_set,
-                            signatures_set,
-                            read_lengths_dictionary,
-                            errors, False,
-                            read_name_details)
-            if line_index == 2:
-                read_count += 1
-                process_sequence_line(line, read_lengths_dictionary)
+                    if platform_uuid not in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
+                        old_illumina_current_prefix = \
+                            process_read_name_line(
+                                line,
+                                old_illumina_current_prefix,
+                                read_numbers_set,
+                                signatures_no_barcode_set,
+                                signatures_set,
+                                read_lengths_dictionary,
+                                errors, False,
+                                read_name_details)
+                if line_index == 2:
+                    read_count += 1
+                    process_sequence_line(line, read_lengths_dictionary)
 
-            line_index = line_index % 4
+                line_index = line_index % 4
     except IOError:
         errors['unzipped_fastq_streaming'] = 'Error occured, while streaming unzipped fastq.'
     else:
@@ -624,27 +626,29 @@ def process_fastq_file(job, fastq_data_stream, session, url):
         result['read_count'] = read_count
 
         # read1/read2
-        if len(read_numbers_set) > 1:
-            errors['inconsistent_read_numbers'] = \
-                'fastq file contains mixed read numbers ' + \
-                '{}.'.format(', '.join(sorted(list(read_numbers_set))))
-            update_content_error(errors,
-                                 'Fastq file contains a mixture of read1 and read2 sequences')
+        # Ultima FASTQs should be excluded from read pairing checks
+        if platform_uuid not in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
+            if len(read_numbers_set) > 1:
+                errors['inconsistent_read_numbers'] = \
+                    'fastq file contains mixed read numbers ' + \
+                    '{}.'.format(', '.join(sorted(list(read_numbers_set))))
+                update_content_error(errors,
+                                     'Fastq file contains a mixture of read1 and read2 sequences')
 
         # read_length
         read_lengths_list = []
         for k in sorted(read_lengths_dictionary.keys()):
             read_lengths_list.append((k, read_lengths_dictionary[k]))
 
-        #excluding pacbio from read_length verification
-        platform_uuid = get_platform_uuid(job.get('@id'), errors, session, url)
+        #excluding Pacbio, Nanopore, and Ultima from read_length verification
         if platform_uuid not in ['ced61406-dcc6-43c4-bddd-4c977cc676e8',
                                  'c7564b38-ab4f-4c42-a401-3de48689a998',
                                  'e2be5728-5744-4da4-8881-cb9526d0389e',
                                  '7cc06b8c-5535-4a77-b719-4c23644e767d',
                                  '8f1a9a8c-3392-4032-92a8-5d196c9d7810',
                                  '6c275b37-018d-4bf8-85f6-6e3b830524a9',
-                                 '6ce511d5-eeb3-41fc-bea7-8c38301e88c1'
+                                 '6ce511d5-eeb3-41fc-bea7-8c38301e88c1',
+                                 '25acccbd-cb36-463b-ac96-adbac11227e6'
                                  ]:
             if 'read_length' in item and item['read_length'] > 2:
                 process_read_lengths(read_lengths_dictionary,
@@ -663,6 +667,9 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                                      'but the file contains read length(s) {}'.format(
                                          ', '.join(map(str, read_lengths_list))))
         # signatures
+        # Ultima FASTQs should be excluded from signature checks
+        if platform_uuid in ['25acccbd-cb36-463b-ac96-adbac11227e6']:
+            return
         signatures_for_comparison = set()
         is_UMI = False
         if 'flowcell_details' in item and len(item['flowcell_details']) > 0:
@@ -1148,7 +1155,7 @@ def check_file(config, session, url, job):
             if item['file_format'] == 'bam' and not errors.get('validateFiles') and 'subreads' not in item['output_type']:
                 platform_list = get_platform_from_bams(job.get('@id'), errors, session, url)
                 if platform_list:
-                    not_Nanopore_PacBio = True
+                    not_Nanopore_PacBio_Ultima = True
                     for platform in platform_list:
                         if platform in ['ced61406-dcc6-43c4-bddd-4c977cc676e8',
                                         'c7564b38-ab4f-4c42-a401-3de48689a998',
@@ -1156,11 +1163,12 @@ def check_file(config, session, url, job):
                                         '7cc06b8c-5535-4a77-b719-4c23644e767d',
                                         '8f1a9a8c-3392-4032-92a8-5d196c9d7810',
                                         '6c275b37-018d-4bf8-85f6-6e3b830524a9',
-                                        '6ce511d5-eeb3-41fc-bea7-8c38301e88c1'
+                                        '6ce511d5-eeb3-41fc-bea7-8c38301e88c1',
+                                        '25acccbd-cb36-463b-ac96-adbac11227e6'
                                         ]:
-                            not_Nanopore_PacBio = False
+                            not_Nanopore_PacBio_Ultima = False
                             break
-                    if not_Nanopore_PacBio:
+                    if not_Nanopore_PacBio_Ultima:
                         runType = None
                         readLength = None
                         try:
