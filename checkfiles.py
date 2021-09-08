@@ -93,7 +93,9 @@ def check_format(encValData, job, path):
     assembly = ASSEMBLY_MAP.get(item.get('assembly'), item.get('assembly'))
     file_output_type = item.get('output_type')
     if (item.get('file_format') == 'bam' and 
-        file_output_type in ['transcriptome alignments', 'gene alignments']):
+        file_output_type in ['transcriptome alignments',
+                             'gene alignments',
+                             'redacted transcriptome alignments']):
         if 'assembly' not in item:
             errors['assembly'] = 'missing assembly'
             update_content_error(errors, 'File metadata lacks assembly information')
@@ -102,7 +104,7 @@ def check_format(encValData, job, path):
             update_content_error(errors, 'File metadata lacks genome annotation information')
         if errors:
             return errors
-        if file_output_type == 'transcriptome alignments':
+        if file_output_type in ['transcriptome alignments', 'redacted transcriptome alignments']:
             chromInfo = '-chromInfo={}/{}/{}/chrom.sizes'.format(
                 encValData, assembly, item['genome_annotation'])
         else:
