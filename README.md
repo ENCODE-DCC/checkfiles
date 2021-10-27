@@ -30,7 +30,7 @@ Install required packages for running deploy::
 Deploy to AWS
 -------------
 
-Supply arguments for checkfiles after a ``--`` separator::
+Supply arguments for branch, name, image-id, instance-type and profile-name (if you want to change the defaults) before  ``--`` separator and the rest of the args after the separator:
 
     bin/python deploy.py -- --username ACCESS_KEY_ID --password SECRET_ACCESS_KEY --bot-token SLACK-BOT-TOKEN https://www.encodeproject.org
 
