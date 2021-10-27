@@ -82,7 +82,7 @@ runcmd:
   #- sudo -u build pyvenv .
   #- sudo -u build bin/pip install -r requirements.txt
 - sudo -u build python3 -m venv venv
-- sudo -u build source venv/bin/activate && pip install -r requirements.txt
+- sudo -u build . venv/bin/activate && pip install wheel && pip install -r requirements.txt
 - cd /home/ubuntu
 - nohup /opt/encoded/checkfiles/script $(cat /opt/checkfiles_args.txt) 2> errors_prod.log 1> output_prod.log &
 - nohup /opt/encoded/checkfiles/writeTestArgs $(cat /opt/checkfiles_args.txt | rev | cut -d " " -f 2- | rev) > /opt/test_args.txt
