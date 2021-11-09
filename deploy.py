@@ -147,8 +147,8 @@ def main():
     parser.add_argument(
         '-n', '--name', type=hostname, help="Instance name")
     parser.add_argument(
-        '--image-id', default='ami-0a00ce72',
-        help="ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20171026.1")
+        '--image-id', default='ami-036d46416a34a611c',
+        help="ubuntu/images/hvm-ssd/ubuntu-focal image")
     parser.add_argument(
         '--instance-type', default='c5.2xlarge',
         help="specify 'c5.9xlarge' if there are many files to check")
