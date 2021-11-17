@@ -51,7 +51,7 @@ runcmd:
 
 - mkdir /opt/encValData
 - chown build:build /opt/encValData
-- sudo -u build git clone --depth 1 https://github.com/ENCODE-DCC/encValData /opt/encValData
+- sudo -u build git clone --branch WRAN-2086-add-rRNA-chrom-size-for-Lis-lab https://github.com/ENCODE-DCC/encValData /opt/encValData
 
 - mkdir /opt/ENCODE_CRISPR_Validation
 - chown build:build /opt/ENCODE_CRISPR_Validation
