@@ -39,6 +39,7 @@ GZIP_TYPES = [
     "sam",
     "wig",
     "vcf",
+    "pairs",
 ]
 
 read_name_prefix = re.compile(
