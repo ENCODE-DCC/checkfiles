@@ -21,6 +21,8 @@ from slackclient import SlackClient
 
 EPILOG = __doc__
 
+PYTHON_PATH = "/opt/encoded/checkfiles/venv/bin/python"
+
 # For submitters, bam files should not be submitted as .gz
 GZIP_TYPES = [
     "CEL",
@@ -273,7 +275,7 @@ def validate_crispr(job, filePath):
 
     try:
         output = subprocess.Popen(  
-                            ['python', guide_validationScript_path,
+                            [PYTHON_PATH, guide_validationScript_path,
                             guide_format_path, filePath],
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
@@ -297,7 +299,7 @@ def validate_crispr(job, filePath):
         if checkPAM:
             try:
                 output = subprocess.Popen(  
-                                ['python', pam_validationScript_path,
+                                [PYTHON_PATH, pam_validationScript_path,
                                 filePath,
                                 genome_reference_path],
                                 stdout=subprocess.PIPE,
