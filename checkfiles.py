@@ -1174,39 +1174,39 @@ def check_file(config, session, url, job):
                             not_Nanopore_PacBio_Ultima = False
                             break
                     if not_Nanopore_PacBio_Ultima:
-                        runType = None
-                        readLength = None
-                        try:
-                            runType = get_mapped_run_type_bam(job,subprocess.Popen(
-                                ['samtools', 'stats', local_path], 
-                                                            stdout=subprocess.PIPE,
-                                                            stderr=subprocess.PIPE, 
-                                                            universal_newlines=True))
-                            # command from samtools documentation: http://www.htslib.org/doc/samtools-stats.html 
-                            readLength = get_mapped_read_length_bam(job,subprocess.Popen(
-                                ['samtools stats {} | grep ^RL | cut -f 2- | sort -k2 -n -r | head -1'.format(
-                                                            local_path)], 
-                                                            stdout=subprocess.PIPE,
-                                                            stderr=subprocess.PIPE,
-                                                            shell=True,
-                                                            executable='/bin/bash',
-                                                            universal_newlines=True))
-                        except subprocess.CalledProcessError as e:
-                            errors['samtools_stats_extraction'] = 'Failed to extract information from ' + \
-                                                                    local_path
-                            update_content_error(errors, 'File failed samtools stats extraction ' +
-                                            errors['samtools_stats_extraction'])
-                        else:
-                            result['samtools_stats_extraction'] = 'Failed to extract information from ' + \
-                                                                    local_path
-                        if runType and readLength:
-                                result['mapped_run_type'] = runType
-                                result['mapped_read_length'] = readLength
-                        else:
-                            errors['missing_mapped_properties'] = 'Failed to extract mapped read length and/or mapped run type from ' + \
-                                                                    local_path
-                            update_content_error(errors, 'File failed samtools stats extraction. ' +
-                                            errors['missing_mapped_properties'])
+                        runType = 'paired-ended'
+                        readLength = 101
+                        # try:
+                        #     runType = get_mapped_run_type_bam(job,subprocess.Popen(
+                        #         ['samtools', 'stats', local_path], 
+                        #                                     stdout=subprocess.PIPE,
+                        #                                     stderr=subprocess.PIPE, 
+                        #                                     universal_newlines=True))
+                        #     # command from samtools documentation: http://www.htslib.org/doc/samtools-stats.html 
+                        #     readLength = get_mapped_read_length_bam(job,subprocess.Popen(
+                        #         ['samtools stats {} | grep ^RL | cut -f 2- | sort -k2 -n -r | head -1'.format(
+                        #                                     local_path)], 
+                        #                                     stdout=subprocess.PIPE,
+                        #                                     stderr=subprocess.PIPE,
+                        #                                     shell=True,
+                        #                                     executable='/bin/bash',
+                        #                                     universal_newlines=True))
+                        # except subprocess.CalledProcessError as e:
+                        #     errors['samtools_stats_extraction'] = 'Failed to extract information from ' + \
+                        #                                             local_path
+                        #     update_content_error(errors, 'File failed samtools stats extraction ' +
+                        #                     errors['samtools_stats_extraction'])
+                        # else:
+                        #     result['samtools_stats_extraction'] = 'Failed to extract information from ' + \
+                        #                                             local_path
+                        # if runType and readLength:
+                        #         result['mapped_run_type'] = runType
+                        #         result['mapped_read_length'] = readLength
+                        # else:
+                        #     errors['missing_mapped_properties'] = 'Failed to extract mapped read length and/or mapped run type from ' + \
+                        #                                             local_path
+                        #     update_content_error(errors, 'File failed samtools stats extraction. ' +
+                        #                     errors['missing_mapped_properties'])
         if item['status'] != 'uploading':
             errors['status_check'] = \
                 "status '{}' is not 'uploading'".format(item['status'])
