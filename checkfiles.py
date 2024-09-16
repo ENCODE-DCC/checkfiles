@@ -1178,16 +1178,16 @@ def check_file(config, session, url, job):
                         readLength = None
                         try:
                             runType = get_mapped_run_type_bam(job,subprocess.Popen(
-                                ['samtools', 'stats', local_path], 
+                                ['samtools', 'stats', local_path],
                                                             stdout=subprocess.PIPE,
-                                                            stderr=subprocess.PIPE, 
+                                                            stderr=subprocess.DEVNULL,
                                                             universal_newlines=True))
                             # command from samtools documentation: http://www.htslib.org/doc/samtools-stats.html 
                             readLength = get_mapped_read_length_bam(job,subprocess.Popen(
                                 ['samtools stats {} | grep ^RL | cut -f 2- | sort -k2 -n -r | head -1'.format(
-                                                            local_path)], 
+                                                            local_path)],
                                                             stdout=subprocess.PIPE,
-                                                            stderr=subprocess.PIPE,
+                                                            stderr=subprocess.DEVNULL,
                                                             shell=True,
                                                             executable='/bin/bash',
                                                             universal_newlines=True))
