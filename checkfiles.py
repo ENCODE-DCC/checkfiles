@@ -323,11 +323,11 @@ def validate_crispr(job, filePath):
 
             except subprocess.CalledProcessError as e:
                 errors['CRISPR_PAM_info_extraction'] = 'Failed to extract information from ' + \
-                                                            local_path
+                                                            filePath
             
     except subprocess.CalledProcessError as e:
         errors['CRISPR_guide_info_extraction'] = 'Failed to extract information from ' + \
-                                                            local_path
+                                                            filePath
     
 
 def process_illumina_read_name_pattern(read_name,
