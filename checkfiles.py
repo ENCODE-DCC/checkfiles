@@ -607,14 +607,14 @@ def process_fastq_file(job, fastq_data_stream, session, url):
                     
                     # may be from here deliver a flag about the presence/absence of the readnamedetails
 
-                    if platform_uuid not in ['ced61406-dcc6-43c4-bddd-4c977cc676e8',
-                                             'c7564b38-ab4f-4c42-a401-3de48689a998',
-                                             'e2be5728-5744-4da4-8881-cb9526d0389e',
-                                             '7cc06b8c-5535-4a77-b719-4c23644e767d',
-                                             '8f1a9a8c-3392-4032-92a8-5d196c9d7810',
-                                             '6c275b37-018d-4bf8-85f6-6e3b830524a9',
-                                             '6ce511d5-eeb3-41fc-bea7-8c38301e88c1',
-                                             '25acccbd-cb36-463b-ac96-adbac11227e6'
+                    if platform_uuid not in ['ced61406-dcc6-43c4-bddd-4c977cc676e8', #pacbio sequel
+                                             'c7564b38-ab4f-4c42-a401-3de48689a998', #pacbio rs2
+                                             'e2be5728-5744-4da4-8881-cb9526d0389e', #pacbio sequel 2
+                                             '7cc06b8c-5535-4a77-b719-4c23644e767d', #ON SmidgION
+                                             '8f1a9a8c-3392-4032-92a8-5d196c9d7810', #ON promethion
+                                             '6c275b37-018d-4bf8-85f6-6e3b830524a9', #ON minion
+                                             '6ce511d5-eeb3-41fc-bea7-8c38301e88c1', #ON gridionx5
+                                             '25acccbd-cb36-463b-ac96-adbac11227e6', #Ultima
                                             ]:
                         old_illumina_current_prefix = \
                             process_read_name_line(
